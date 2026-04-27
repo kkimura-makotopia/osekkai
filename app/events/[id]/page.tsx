@@ -525,13 +525,30 @@ export default function EventDetailPage() {
             )}
             {visibleFbs.map(f => {
               const canEdit = f.fromUser.id === session?.dbUserId
+              const canDelete = f.fromUser.id === session?.dbUserId || isAdmin
               const isEditing = editingFbId === f.id
+              const handleFbDelete = async () => {
+                if (!confirm('このおせっかいを削除しますか? 元に戻せません。')) return
+                const res = await fetch(`/api/feedbacks/${f.id}`, { method: 'DELETE' })
+                if (res.ok) {
+                  setEvent(ev => ev ? { ...ev, feedbacks: ev.feedbacks.filter(x => x.id !== f.id) } : ev)
+                } else {
+                  alert('削除に失敗しました')
+                }
+              }
               return (
                 <div key={f.id} className="bg-slate-800 border border-slate-700 rounded-xl p-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${FB_COLORS[f.type] ?? FB_COLORS.other}`}>{FB_LABELS[f.type] ?? 'その他'}</span>
-                    {canEdit && !isEditing && (
-                      <button onClick={() => startFbEdit(f)} className="text-blue-400 hover:text-blue-300 text-xs font-medium">編集</button>
+                    {!isEditing && (
+                      <div className="flex items-center gap-3">
+                        {canEdit && (
+                          <button onClick={() => startFbEdit(f)} className="text-blue-400 hover:text-blue-300 text-xs font-medium">編集</button>
+                        )}
+                        {canDelete && (
+                          <button onClick={handleFbDelete} className="text-red-400 hover:text-red-300 text-xs font-medium">削除</button>
+                        )}
+                      </div>
                     )}
                   </div>
 

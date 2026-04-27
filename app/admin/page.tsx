@@ -168,11 +168,31 @@ export default function AdminPage() {
               <div className="bg-slate-900/50 border border-slate-700 rounded-xl p-4 mb-4">
                 <p className="text-slate-200 text-sm whitespace-pre-wrap leading-relaxed">{openFb.content}</p>
               </div>
-              <div className="space-y-1 text-xs text-slate-400 pt-3 border-t border-slate-700">
+              <div className="space-y-1 text-xs text-slate-400 pt-3 border-t border-slate-700 mb-4">
                 <div>送信者: {openFb.fromUser.fullName ?? openFb.fromUser.name} {openFb.fromUser.company ? `· ${openFb.fromUser.company}` : ''}</div>
                 <div>受信者: {openFb.toUser.fullName ?? openFb.toUser.name} {openFb.toUser.company ? `· ${openFb.toUser.company}` : ''}</div>
                 {openFb.event && <div>関連交流会: {openFb.event.title}</div>}
                 <div>日時: {new Date(openFb.createdAt).toLocaleString('ja-JP')}</div>
+              </div>
+              <div className="pt-3 border-t border-slate-700">
+                <button
+                  onClick={async () => {
+                    if (!confirm('このおせっかいを削除しますか? 元に戻せません。')) return
+                    const res = await fetch(`/api/feedbacks/${openFb.id}`, { method: 'DELETE' })
+                    if (res.ok) {
+                      setFeedbacks(prev => prev.filter(x => x.id !== openFb.id))
+                      setOpenFb(null)
+                    } else {
+                      const text = await res.text()
+                      let msg = text
+                      try { msg = JSON.parse(text).error ?? text } catch {}
+                      alert(`削除に失敗しました\n${msg}`)
+                    }
+                  }}
+                  className="bg-red-600/20 hover:bg-red-600/30 text-red-300 px-4 py-2 rounded-xl text-sm font-medium"
+                >
+                  削除する
+                </button>
               </div>
             </div>
           </div>

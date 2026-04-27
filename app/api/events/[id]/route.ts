@@ -26,6 +26,21 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   return NextResponse.json(event)
 }
 
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions)
+  if (!session?.dbUserId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (session.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  try {
+    await prisma.communityEvent.delete({ where: { id: params.id } })
+    return new NextResponse(null, { status: 204 })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('event DELETE failed:', err)
+    return NextResponse.json({ error: `削除に失敗: ${msg}` }, { status: 500 })
+  }
+}
+
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions)
   if (!session?.dbUserId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

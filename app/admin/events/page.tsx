@@ -75,6 +75,19 @@ export default function AdminEventsPage() {
       reader.readAsDataURL(file)
     })
 
+  const handleDeleteEvent = async (ev: Event) => {
+    if (!confirm(`交流会「${ev.title}」を削除しますか?\n\n※ この交流会に紐づく招待履歴・おせっかいも全て削除されます。\n※ 元に戻せません。`)) return
+    const res = await fetch(`/api/events/${ev.id}`, { method: 'DELETE' })
+    if (res.ok) {
+      setEvents(prev => prev.filter(x => x.id !== ev.id))
+    } else {
+      const text = await res.text()
+      let msg = text
+      try { msg = JSON.parse(text).error ?? text } catch {}
+      alert(`削除に失敗しました\n${msg}`)
+    }
+  }
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     setPdfError('')
@@ -259,9 +272,17 @@ export default function AdminEventsPage() {
                 <span>おせっかい: {ev._count.feedbacks}件</span>
               </div>
             </div>
-            <Link href={`/events/${ev.id}`} className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl text-sm font-medium shrink-0 transition-colors">
-              詳細
-            </Link>
+            <div className="flex gap-2 shrink-0">
+              <Link href={`/events/${ev.id}`} className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors">
+                詳細
+              </Link>
+              <button
+                onClick={() => handleDeleteEvent(ev)}
+                className="bg-red-600/20 hover:bg-red-600/30 text-red-300 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+              >
+                削除
+              </button>
+            </div>
           </div>
         ))}
       </div>
