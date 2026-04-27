@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── ユーザー ────────────────────────────────────────────────
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  fullName  String?
+  company   String?
+  jobTitle  String?
+  bio       String?
+  industry  String?
+  employeeCount Int?
+  googleId  String?  @unique
+  image     String?
+  role      Role     @default(guest)
+  referralTemplate String?
+  snsLinks  Json     @default("{}")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdEvents     CommunityEvent[]
+  sentFeedbacks     Feedback[]        @relation("SentFeedbacks")
+  receivedFeedbacks Feedback[]        @relation("ReceivedFeedbacks")
+  referralLinks     ReferralLink[]
+  invitedEvents     EventInvitee[]
+
+  @@map("users")
+}
+
+enum Role {
+  admin
+  member
+  guest
+
+  @@map("role")
+}
+
+// ─── 交流会イベント ──────────────────────────────────────────
+model CommunityEvent {
+  id          String    @id @default(cuid())
+  title       String
+  heldAt      DateTime
+  location    String?
+  description String?
+  minutesText String?
+  aiSummary   String?
+  issuePdfData String?  // 経営課題PDF (base64)
+  issuePdfName String?  // 元ファイル名
+  createdBy   String
+  creator     User      @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  feedbacks Feedback[]
+  invitees  EventInvitee[]
+
+  @@map("community_events")
+}
+
+// ─── 交流会の招待者 ─────────────────────────────────────────
+model EventInvitee {
+  eventId   String
+  userId    String
+  event     CommunityEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+
+  @@id([eventId, userId])
+  @@map("event_invitees")
+}
+
+// ─── フィードバック / 紹介 ───────────────────────────────────
+model Feedback {
+  id         String         @id @default(cuid())
+  fromUserId String
+  fromUser   User           @relation("SentFeedbacks", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUserId   String
+  toUser     User           @relation("ReceivedFeedbacks", fields: [toUserId], references: [id], onDelete: Cascade)
+  eventId    String?
+  event      CommunityEvent? @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  type       FeedbackType
+  content    String
+  linkToken  String?
+  createdAt  DateTime       @default(now())
+
+  @@map("feedbacks")
+}
+
+enum FeedbackType {
+  intro
+  feedback
+  advice
+  other
+
+  @@map("feedback_type")
+}
+
+// ─── 紹介リンク ─────────────────────────────────────────────
+model ReferralLink {
+  id         String    @id @default(cuid())
+  fromUserId String
+  fromUser   User      @relation(fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUserId   String
+  message    String?
+  token      String    @unique @default(cuid())
+  expiresAt  DateTime?
+  clickCount Int       @default(0)
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+
+  @@map("referral_links")
+}
