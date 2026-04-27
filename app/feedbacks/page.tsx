@@ -62,8 +62,24 @@ export default function FeedbacksPage() {
   if (status === 'loading' || loading) return <div className="flex items-center justify-center min-h-screen"><div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full" /></div>
 
   const myId = session?.dbUserId
+  const isAdmin = session?.role === 'admin'
   const received = feedbacks.filter(f => f.toUser.id === myId)
   const others = feedbacks.filter(f => f.fromUser.id !== myId && f.toUser.id !== myId)
+
+  const handleDelete = async (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    if (!confirm('このおせっかいを削除しますか? 元に戻せません。')) return
+    const res = await fetch(`/api/feedbacks/${id}`, { method: 'DELETE' })
+    if (res.ok) {
+      setFeedbacks(prev => prev.filter(f => f.id !== id))
+      setOpenFb(prev => prev?.id === id ? null : prev)
+    } else {
+      const text = await res.text()
+      let msg = text
+      try { msg = JSON.parse(text).error ?? text } catch {}
+      alert(`削除に失敗しました\n${msg}`)
+    }
+  }
   const visibleAll = tab === 'received' ? received : others
   const visible = filter === 'all' ? visibleAll : visibleAll.filter(f => {
     if (filter === 'other') return f.type === 'other' || f.type === 'feedback'
@@ -114,12 +130,20 @@ export default function FeedbacksPage() {
       ) : (
         <div className="space-y-3">
           {visible.map(f => (
-            <button key={f.id} onClick={() => setOpenFb(f)}
-              className="w-full text-left bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-2xl p-4 transition-colors">
+            <div key={f.id} onClick={() => setOpenFb(f)}
+              className="bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-2xl p-4 transition-colors cursor-pointer">
               <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${FB_COLORS[f.type] ?? FB_COLORS.other}`}>{FB_LABELS[f.type] ?? 'その他'}</span>
                 {f.event && <span className="text-slate-500 text-xs truncate">交流会: {f.event.title}</span>}
                 <span className="text-slate-500 text-xs ml-auto">{new Date(f.createdAt).toLocaleDateString('ja-JP')}</span>
+                {isAdmin && (
+                  <button
+                    onClick={e => handleDelete(f.id, e)}
+                    className="text-red-400 hover:text-red-300 text-xs font-medium px-2 py-0.5 rounded hover:bg-red-500/10"
+                  >
+                    削除
+                  </button>
+                )}
               </div>
               <p className="text-slate-200 text-sm line-clamp-3 mb-2">{f.content}</p>
               <p className="text-slate-500 text-xs">
@@ -128,7 +152,7 @@ export default function FeedbacksPage() {
                 {f.toUser.id === myId ? '自分' : (f.toUser.fullName ?? f.toUser.name)}
                 {f.toUser.id !== myId && f.toUser.company && ` (${f.toUser.company})`}
               </p>
-            </button>
+            </div>
           ))}
         </div>
       )}
@@ -147,12 +171,22 @@ export default function FeedbacksPage() {
               <div className="bg-slate-900/50 border border-slate-700 rounded-xl p-4 mb-4">
                 <p className="text-slate-200 text-sm whitespace-pre-wrap leading-relaxed">{openFb.content}</p>
               </div>
-              <div className="space-y-1 text-xs text-slate-400 pt-3 border-t border-slate-700">
+              <div className="space-y-1 text-xs text-slate-400 pt-3 border-t border-slate-700 mb-4">
                 <div>送信者: {openFb.fromUser.fullName ?? openFb.fromUser.name} {openFb.fromUser.company ? `· ${openFb.fromUser.company}` : ''}</div>
                 <div>受信者: {openFb.toUser.id === myId ? '自分' : `${openFb.toUser.fullName ?? openFb.toUser.name}${openFb.toUser.company ? ` · ${openFb.toUser.company}` : ''}`}</div>
                 {openFb.event && <div>関連交流会: {openFb.event.title}</div>}
                 <div>日時: {new Date(openFb.createdAt).toLocaleString('ja-JP')}</div>
               </div>
+              {isAdmin && (
+                <div className="pt-3 border-t border-slate-700">
+                  <button
+                    onClick={() => handleDelete(openFb.id)}
+                    className="bg-red-600/20 hover:bg-red-600/30 text-red-300 px-4 py-2 rounded-xl text-sm font-medium"
+                  >
+                    削除する
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

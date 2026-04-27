@@ -14,31 +14,12 @@ interface UserRow {
   createdAt: string
 }
 
-interface FeedbackRow {
-  id: string
-  type: string
-  content: string
-  createdAt: string
-  fromUser: { id: string; fullName: string | null; name: string | null; company: string | null; image: string | null }
-  toUser: { id: string; fullName: string | null; name: string | null; company: string | null; image: string | null }
-  event: { id: string; title: string } | null
-}
-
-const FB_LABELS: Record<string, string> = { intro: '紹介', advice: '知見', other: 'その他', feedback: 'その他' }
-const FB_COLORS: Record<string, string> = {
-  intro: 'bg-blue-500/20 text-blue-400',
-  advice: 'bg-purple-500/20 text-purple-400',
-  other: 'bg-slate-500/20 text-slate-300',
-  feedback: 'bg-slate-500/20 text-slate-300',
-}
-
 export default function AdminPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [users, setUsers] = useState<UserRow[]>([])
-  const [feedbacks, setFeedbacks] = useState<FeedbackRow[]>([])
-  const [events, setEvents] = useState<unknown[]>([])
-  const [openFb, setOpenFb] = useState<FeedbackRow | null>(null)
+  const [feedbackCount, setFeedbackCount] = useState(0)
+  const [eventCount, setEventCount] = useState(0)
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
@@ -63,8 +44,8 @@ export default function AdminPage() {
       safeJson('/api/feedbacks'),
     ]).then(([us, evs, fbs]) => {
       if (Array.isArray(us)) setUsers(us)
-      if (Array.isArray(evs)) setEvents(evs)
-      if (Array.isArray(fbs)) setFeedbacks(fbs)
+      if (Array.isArray(evs)) setEventCount(evs.length)
+      if (Array.isArray(fbs)) setFeedbackCount(fbs.length)
       setLoaded(true)
     })
   }, [status, session, router])
@@ -80,8 +61,8 @@ export default function AdminPage() {
   const guestCount = roleCounts.guest ?? 0
 
   const kpis = [
-    { label: '交流会', value: events.length, icon: '🤝', color: 'from-emerald-600 to-emerald-400', link: '/admin/events' },
-    { label: 'おせっかい', value: feedbacks.length, icon: '💬', color: 'from-amber-600 to-amber-400', link: '#feedbacks' },
+    { label: '交流会', value: eventCount, icon: '🤝', color: 'from-emerald-600 to-emerald-400', link: '/admin/events' },
+    { label: 'おせっかい', value: feedbackCount, icon: '💬', color: 'from-amber-600 to-amber-400', link: '/feedbacks' },
   ]
 
   return (
@@ -116,7 +97,7 @@ export default function AdminPage() {
       </Link>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 gap-4 mb-8">
+      <div className="grid grid-cols-2 gap-4">
         {kpis.map(kpi => (
           <Link key={kpi.label} href={kpi.link}
             className={`bg-gradient-to-br ${kpi.color} rounded-2xl p-5 block hover:scale-105 transition-transform`}
@@ -127,77 +108,6 @@ export default function AdminPage() {
           </Link>
         ))}
       </div>
-
-      {/* おせっかい一覧 */}
-      <div id="feedbacks" className="bg-slate-800 rounded-2xl p-6 border border-slate-700">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-white">おせっかい一覧</h2>
-          <span className="text-slate-400 text-sm">{feedbacks.length}件</span>
-        </div>
-        {feedbacks.length === 0 ? (
-          <p className="text-slate-500 text-sm">おせっかいがありません</p>
-        ) : (
-          <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1">
-            {feedbacks.map(f => (
-              <button key={f.id} onClick={() => setOpenFb(f)}
-                className="w-full text-left bg-slate-700/40 hover:bg-slate-700 rounded-xl p-3 transition-colors">
-                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${FB_COLORS[f.type] ?? FB_COLORS.other}`}>{FB_LABELS[f.type] ?? 'その他'}</span>
-                  <span className="text-slate-500 text-xs">{new Date(f.createdAt).toLocaleDateString('ja-JP')}</span>
-                  {f.event && <span className="text-slate-500 text-xs truncate">· {f.event.title}</span>}
-                </div>
-                <p className="text-slate-300 text-sm line-clamp-2">{f.content}</p>
-                <p className="text-slate-500 text-xs mt-1">
-                  {f.fromUser.fullName ?? f.fromUser.name} → {f.toUser.fullName ?? f.toUser.name}
-                </p>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* FB 詳細モーダル */}
-      {openFb && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setOpenFb(null)}>
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full" onClick={e => e.stopPropagation()}>
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${FB_COLORS[openFb.type] ?? FB_COLORS.other}`}>{FB_LABELS[openFb.type] ?? 'その他'}</span>
-                <button onClick={() => setOpenFb(null)} className="text-slate-400 hover:text-white text-xl leading-none">×</button>
-              </div>
-              <div className="bg-slate-900/50 border border-slate-700 rounded-xl p-4 mb-4">
-                <p className="text-slate-200 text-sm whitespace-pre-wrap leading-relaxed">{openFb.content}</p>
-              </div>
-              <div className="space-y-1 text-xs text-slate-400 pt-3 border-t border-slate-700 mb-4">
-                <div>送信者: {openFb.fromUser.fullName ?? openFb.fromUser.name} {openFb.fromUser.company ? `· ${openFb.fromUser.company}` : ''}</div>
-                <div>受信者: {openFb.toUser.fullName ?? openFb.toUser.name} {openFb.toUser.company ? `· ${openFb.toUser.company}` : ''}</div>
-                {openFb.event && <div>関連交流会: {openFb.event.title}</div>}
-                <div>日時: {new Date(openFb.createdAt).toLocaleString('ja-JP')}</div>
-              </div>
-              <div className="pt-3 border-t border-slate-700">
-                <button
-                  onClick={async () => {
-                    if (!confirm('このおせっかいを削除しますか? 元に戻せません。')) return
-                    const res = await fetch(`/api/feedbacks/${openFb.id}`, { method: 'DELETE' })
-                    if (res.ok) {
-                      setFeedbacks(prev => prev.filter(x => x.id !== openFb.id))
-                      setOpenFb(null)
-                    } else {
-                      const text = await res.text()
-                      let msg = text
-                      try { msg = JSON.parse(text).error ?? text } catch {}
-                      alert(`削除に失敗しました\n${msg}`)
-                    }
-                  }}
-                  className="bg-red-600/20 hover:bg-red-600/30 text-red-300 px-4 py-2 rounded-xl text-sm font-medium"
-                >
-                  削除する
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
