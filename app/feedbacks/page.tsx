@@ -163,7 +163,7 @@ export default function FeedbacksPage() {
           { key: 'others', label: '他の人のおせっかい', count: others.length },
         ] as const).map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
-            className={`flex-1 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${tab === t.key ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700'}`}>
+            className={`flex-1 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${tab === t.key ? 'bg-brand-sky text-white' : 'bg-brand-navy-800 text-slate-400 hover:text-white border border-brand-navy-700'}`}>
             {t.label}({t.count})
           </button>
         ))}
@@ -173,7 +173,7 @@ export default function FeedbacksPage() {
       <div className="flex gap-1.5 flex-wrap mb-4">
         {filterChips.map(c => (
           <button key={c.key} onClick={() => setFilter(c.key)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${filter === c.key ? 'bg-blue-600 text-white border-blue-500' : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'}`}>
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${filter === c.key ? 'bg-brand-sky text-white border-blue-500' : 'bg-brand-navy-800 text-slate-400 border-brand-navy-700 hover:text-white'}`}>
             {c.label}
           </button>
         ))}
@@ -187,7 +187,7 @@ export default function FeedbacksPage() {
         <div className="space-y-3">
           {visible.map(f => (
             <div key={f.id}
-              className="bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-2xl p-4 transition-colors">
+              className="bg-brand-navy-800 border border-brand-navy-700 hover:border-brand-navy-700 rounded-2xl p-4 transition-colors">
               <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${FB_COLORS[f.type] ?? FB_COLORS.other}`}>{FB_LABELS[f.type] ?? 'その他'}</span>
                 {f.event && <span className="text-slate-500 text-xs truncate">交流会: {f.event.title}</span>}
@@ -211,7 +211,7 @@ export default function FeedbacksPage() {
                   </button>
                 )}
               </p>
-              <div className="flex items-center gap-2 pt-2 border-t border-slate-700">
+              <div className="flex items-center gap-2 pt-2 border-t border-brand-navy-700">
                 {isAdmin && (
                   <button
                     onClick={() => handleDelete(f.id)}
@@ -222,7 +222,7 @@ export default function FeedbacksPage() {
                 )}
                 <button
                   onClick={() => setOpenFb(f)}
-                  className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium"
+                  className="bg-brand-navy-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium"
                 >
                   詳細
                 </button>
@@ -235,7 +235,7 @@ export default function FeedbacksPage() {
       {/* おせっかい詳細モーダル */}
       {openFb && (
         <div className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4" onClick={() => setOpenFb(null)}>
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full" onClick={e => e.stopPropagation()}>
+          <div className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl max-w-lg w-full" onClick={e => e.stopPropagation()}>
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${FB_COLORS[openFb.type] ?? FB_COLORS.other}`}>
@@ -243,10 +243,10 @@ export default function FeedbacksPage() {
                 </span>
                 <button onClick={() => setOpenFb(null)} className="text-slate-400 hover:text-white text-2xl leading-none w-8 h-8 flex items-center justify-center">×</button>
               </div>
-              <div className="bg-slate-900/50 border border-slate-700 rounded-xl p-4 mb-4">
+              <div className="bg-brand-navy-900/50 border border-brand-navy-700 rounded-xl p-4 mb-4">
                 <p className="text-slate-200 text-sm whitespace-pre-wrap leading-relaxed">{openFb.content}</p>
               </div>
-              <div className="space-y-1.5 text-xs text-slate-400 pt-3 border-t border-slate-700 mb-4">
+              <div className="space-y-1.5 text-xs text-slate-400 pt-3 border-t border-brand-navy-700 mb-4">
                 <div>
                   送信者:{' '}
                   {shouldHide(openFb.fromUser) ? (
@@ -271,7 +271,7 @@ export default function FeedbacksPage() {
                 <div>日時: {new Date(openFb.createdAt).toLocaleString('ja-JP')}</div>
               </div>
               {isAdmin && (
-                <div className="pt-3 border-t border-slate-700">
+                <div className="pt-3 border-t border-brand-navy-700">
                   <button
                     onClick={() => handleDelete(openFb.id)}
                     className="bg-red-600/20 hover:bg-red-600/30 text-red-300 px-4 py-2 rounded-xl text-sm font-medium"
@@ -295,11 +295,11 @@ export default function FeedbacksPage() {
         const sns = Object.entries(u.snsLinks ?? {}).filter(([, v]) => v) as [string, string][]
         return (
           <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setOpenUserId(null)}>
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center text-white text-xl font-bold shrink-0 overflow-hidden">
+                    <div className="w-14 h-14 rounded-full bg-brand-sky flex items-center justify-center text-white text-xl font-bold shrink-0 overflow-hidden">
                       {u.image ? <Image src={u.image} alt="" width={56} height={56} className="rounded-full" /> : (u.fullName ?? u.name ?? '?')[0]}
                     </div>
                     <div className="min-w-0">
@@ -321,13 +321,13 @@ export default function FeedbacksPage() {
                   )}
                 </div>
                 {u.bio && (
-                  <div className="pt-3 border-t border-slate-700 mb-3">
+                  <div className="pt-3 border-t border-brand-navy-700 mb-3">
                     <p className="text-slate-400 text-xs mb-1">自己紹介</p>
                     <p className="text-slate-200 text-sm whitespace-pre-wrap leading-relaxed">{u.bio}</p>
                   </div>
                 )}
                 {sns.length > 0 && (
-                  <div className="pt-3 border-t border-slate-700">
+                  <div className="pt-3 border-t border-brand-navy-700">
                     <p className="text-slate-400 text-xs mb-2">SNS</p>
                     <div className="flex gap-3 flex-wrap">
                       {sns.map(([key, url]) => (

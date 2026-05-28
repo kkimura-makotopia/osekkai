@@ -12,7 +12,7 @@ export function LoginClient() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-navy-950 via-brand-navy to-brand-navy-900 px-4">
       <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-10 w-full max-w-md shadow-2xl text-center">
         <div className="mb-8">
           <Image
@@ -23,7 +23,7 @@ export function LoginClient() {
             className="mx-auto mb-4"
             priority
           />
-          <span className="inline-block text-xs bg-blue-500/20 border border-blue-400/30 text-blue-200 rounded-full px-3 py-1 mb-3">
+          <span className="inline-block text-xs bg-brand-sky/20 border border-brand-sky/40 text-brand-sky-400 rounded-full px-3 py-1 mb-3">
             完全招待制コミュニティ
           </span>
           <p className="text-slate-200 text-sm leading-relaxed">

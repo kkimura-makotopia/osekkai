@@ -119,7 +119,7 @@ export default function AdminEventsPage() {
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-2"
+          className="bg-brand-sky hover:bg-brand-sky-400 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-2"
         >
           <span>+</span> 新規作成
         </button>
@@ -127,7 +127,7 @@ export default function AdminEventsPage() {
 
       {/* Create Form */}
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-6">
+        <form onSubmit={handleCreate} className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-6 mb-6">
           <h2 className="text-lg font-semibold text-white mb-4">交流会を作成</h2>
           <div className="grid sm:grid-cols-2 gap-4 mb-4">
             <div>
@@ -136,7 +136,7 @@ export default function AdminEventsPage() {
                 required
                 value={form.title}
                 onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
-                className="w-full bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
                 placeholder="第1回 経営者交流会"
               />
             </div>
@@ -147,7 +147,7 @@ export default function AdminEventsPage() {
                 type="datetime-local"
                 value={form.heldAt}
                 onChange={e => setForm(p => ({ ...p, heldAt: e.target.value }))}
-                className="w-full bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"
               />
             </div>
             <div>
@@ -155,7 +155,7 @@ export default function AdminEventsPage() {
               <input
                 value={form.location}
                 onChange={e => setForm(p => ({ ...p, location: e.target.value }))}
-                className="w-full bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
                 placeholder="東京都渋谷区..."
               />
             </div>
@@ -164,7 +164,7 @@ export default function AdminEventsPage() {
               <input
                 value={form.description}
                 onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-                className="w-full bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
                 placeholder="交流会の内容..."
               />
             </div>
@@ -178,14 +178,14 @@ export default function AdminEventsPage() {
                 value={inviteeSearch}
                 onChange={e => setInviteeSearch(e.target.value)}
                 placeholder="名前・会社で検索..."
-                className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1 text-white text-sm w-56 focus:outline-none focus:border-blue-500"
+                className="bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-1 text-white text-sm w-56 focus:outline-none focus:border-blue-500"
               />
             </div>
-            <div className="bg-slate-900/50 border border-slate-700 rounded-xl p-3 max-h-52 overflow-y-auto">
+            <div className="bg-brand-navy-900/50 border border-brand-navy-700 rounded-xl p-3 max-h-52 overflow-y-auto">
               {filteredUsers.length === 0 && <p className="text-slate-500 text-sm text-center py-4">該当ユーザーがいません</p>}
               <div className="grid sm:grid-cols-2 gap-1">
                 {filteredUsers.map(u => (
-                  <label key={u.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-700 cursor-pointer">
+                  <label key={u.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-brand-navy-700 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={selectedInvitees.includes(u.id)}
@@ -203,10 +203,10 @@ export default function AdminEventsPage() {
           </div>
 
           <div className="flex gap-3">
-            <button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-xl text-sm font-medium disabled:opacity-60">
+            <button type="submit" disabled={saving} className="bg-brand-sky hover:bg-brand-sky-400 text-white px-5 py-2 rounded-xl text-sm font-medium disabled:opacity-60">
               {saving ? '作成中...' : '作成する'}
             </button>
-            <button type="button" onClick={() => { setShowForm(false); setSelectedInvitees([]); setInviteeSearch('') }} className="bg-slate-700 text-slate-300 px-5 py-2 rounded-xl text-sm hover:bg-slate-600">
+            <button type="button" onClick={() => { setShowForm(false); setSelectedInvitees([]); setInviteeSearch('') }} className="bg-brand-navy-700 text-slate-300 px-5 py-2 rounded-xl text-sm hover:bg-slate-600">
               キャンセル
             </button>
           </div>
@@ -216,7 +216,7 @@ export default function AdminEventsPage() {
       <div className="space-y-4">
         {events.length === 0 && <div className="text-center py-16 text-slate-500">交流会がありません</div>}
         {events.map(ev => (
-          <div key={ev.id} className="bg-slate-800 border border-slate-700 rounded-2xl p-5 flex items-start justify-between gap-4">
+          <div key={ev.id} className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-5 flex items-start justify-between gap-4">
             <div className="min-w-0">
               <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <span className="text-blue-400 text-sm font-medium">{new Date(ev.heldAt).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
@@ -231,7 +231,7 @@ export default function AdminEventsPage() {
               </div>
             </div>
             <div className="flex gap-2 shrink-0">
-              <Link href={`/events/${ev.id}`} className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors">
+              <Link href={`/events/${ev.id}`} className="bg-brand-navy-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors">
                 詳細
               </Link>
               <button

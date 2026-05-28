@@ -82,10 +82,10 @@ export default function MyPage() {
       <h1 className="text-2xl font-bold text-white mb-6">マイページ</h1>
 
       {/* Profile Card */}
-      <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6">
+      <div className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-6">
         <div className="flex items-start justify-between mb-6">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
+            <div className="w-16 h-16 rounded-full bg-brand-sky flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
               {profile.image ? <Image src={profile.image} alt="" width={64} height={64} className="rounded-full" /> : (profile.fullName ?? profile.name ?? 'U')[0]}
             </div>
             <div>
@@ -96,7 +96,7 @@ export default function MyPage() {
           </div>
           <button
             onClick={() => setEditing(!editing)}
-            className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+            className="bg-brand-navy-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors"
           >
             {editing ? '閉じる' : '編集'}
           </button>
@@ -108,17 +108,17 @@ export default function MyPage() {
               <div>
                 <label className="text-slate-400 text-sm block mb-1">氏名</label>
                 <input value={form.fullName} onChange={e => setForm(p => ({ ...p, fullName: e.target.value }))}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
+                  className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
               </div>
               <div>
                 <label className="text-slate-400 text-sm block mb-1">会社名</label>
                 <input value={form.company} onChange={e => setForm(p => ({ ...p, company: e.target.value }))}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
+                  className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
               </div>
               <div>
                 <label className="text-slate-400 text-sm block mb-1">役職</label>
                 <select value={form.jobTitle} onChange={e => setForm(p => ({ ...p, jobTitle: e.target.value }))}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                  className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500">
                   <option value="">選択してください</option>
                   {JOB_TITLES.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
@@ -126,7 +126,7 @@ export default function MyPage() {
               <div>
                 <label className="text-slate-400 text-sm block mb-1">業界</label>
                 <select value={form.industry} onChange={e => setForm(p => ({ ...p, industry: e.target.value }))}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                  className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500">
                   <option value="">選択してください</option>
                   {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
                 </select>
@@ -136,14 +136,14 @@ export default function MyPage() {
                 <input type="number" min="0" value={form.employeeCount}
                   onChange={e => setForm(p => ({ ...p, employeeCount: e.target.value === '' ? '' : Number(e.target.value) }))}
                   placeholder="例: 50"
-                  className="w-full bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500" />
+                  className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500" />
               </div>
             </div>
             <div>
               <label className="text-slate-400 text-sm block mb-1">自己紹介(経歴や事業内容)</label>
               <textarea value={form.bio} onChange={e => setForm(p => ({ ...p, bio: e.target.value }))}
                 rows={5} placeholder="経歴や現在の事業内容などを自由にご記入ください"
-                className="w-full bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 resize-none" />
+                className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 resize-none" />
             </div>
             <div>
               <label className="text-slate-400 text-sm block mb-2">SNSリンク</label>
@@ -155,14 +155,14 @@ export default function MyPage() {
                       value={form.snsLinks[field.key] ?? ''}
                       onChange={e => setForm(p => ({ ...p, snsLinks: { ...p.snsLinks, [field.key]: e.target.value } }))}
                       placeholder={field.placeholder}
-                      className="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500"
+                      className="flex-1 bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-1.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500"
                     />
                   </div>
                 ))}
               </div>
             </div>
             <div className="flex gap-3">
-              <button onClick={handleSave} disabled={saving} className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-xl text-sm font-medium disabled:opacity-60">
+              <button onClick={handleSave} disabled={saving} className="bg-brand-sky hover:bg-brand-sky-400 text-white px-5 py-2 rounded-xl text-sm font-medium disabled:opacity-60">
                 {saving ? '保存中...' : '保存する'}
               </button>
             </div>

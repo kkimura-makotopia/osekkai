@@ -67,14 +67,6 @@ export default function HelpPage() {
         </div>
       </Section>
 
-      {/* 交流会への参加 */}
-      <Section title="交流会への参加" icon="🤝">
-        <p className="text-slate-300 text-sm leading-relaxed">
-          運営管理者が交流会を作成し、参加メンバーを招待します。<br />
-          招待された交流会はヘッダ「交流会」から確認できます。詳細ページでは参加者一覧・おせっかい送受信ができます。
-        </p>
-      </Section>
-
       {/* プロフィール */}
       <Section title="プロフィールの編集" icon="✏️">
         <p className="text-slate-300 text-sm leading-relaxed">
@@ -83,23 +75,11 @@ export default function HelpPage() {
         </p>
       </Section>
 
-      {/* 管理者向け */}
-      {role === 'admin' && (
-        <Section title="運営管理者向けの操作" icon="🛡️">
-          <ul className="text-sm text-slate-300 space-y-2 list-disc list-inside">
-            <li><strong>ダッシュボード</strong>: 会員数・交流会・おせっかい件数の概況を確認</li>
-            <li><strong>会員管理</strong>: 会員のロール変更（ゲスト ⇄ 正会員 ⇄ 運営管理者）と削除</li>
-            <li><strong>イベント管理</strong>: 交流会の作成・編集・削除、招待者の管理</li>
-            <li><strong>おせっかい一覧</strong>: 全ユーザーのおせっかいを閲覧・削除可能</li>
-          </ul>
-        </Section>
-      )}
-
       {/* 補足 */}
       <Section title="その他" icon="❓">
         <p className="text-slate-300 text-sm leading-relaxed">
           不明点や不具合のご報告は運営までご連絡ください。<br />
-          完全招待制のため、新メンバーの参加には既存メンバーからの紹介が必要です。
+          完全招待制のため、新メンバーが会員になり本サイトを利用するためには運営の許可が必要です。
         </p>
         <div className="mt-4">
           <Link href="/" className="text-blue-400 hover:text-blue-300 text-sm">← ホームに戻る</Link>
@@ -111,7 +91,7 @@ export default function HelpPage() {
 
 function Section({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
   return (
-    <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-6">
+    <div className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-6 mb-6">
       <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
         <span>{icon}</span> {title}
       </h2>
@@ -132,7 +112,7 @@ function RoleRow({ label, color, desc }: { label: string; color: string; desc: s
 function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
     <div className="flex gap-3 mb-4">
-      <div className="w-7 h-7 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center shrink-0">
+      <div className="w-7 h-7 rounded-full bg-brand-sky text-white text-sm font-bold flex items-center justify-center shrink-0">
         {n}
       </div>
       <div className="flex-1">

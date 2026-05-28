@@ -94,15 +94,15 @@ export default function AdminMembersPage() {
           placeholder="名前・会社名・メールで検索..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="bg-slate-800 border border-slate-600 rounded-xl px-4 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 w-64"
+          className="bg-brand-navy-800 border border-brand-navy-700 rounded-xl px-4 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 w-64"
         />
       </div>
 
-      <div className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
+      <div className="bg-brand-navy-800 rounded-2xl border border-brand-navy-700 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-slate-700">
+              <tr className="border-b border-brand-navy-700">
                 <th className="text-left text-slate-400 text-sm font-medium px-4 py-3">会員</th>
                 <th className="text-left text-slate-400 text-sm font-medium px-4 py-3 hidden sm:table-cell">会社・役職</th>
                 <th className="text-left text-slate-400 text-sm font-medium px-4 py-3 hidden md:table-cell">おせっかい</th>
@@ -113,10 +113,10 @@ export default function AdminMembersPage() {
             </thead>
             <tbody>
               {filtered.map(u => (
-                <tr key={u.id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
+                <tr key={u.id} className="border-b border-brand-navy-700/50 hover:bg-brand-navy-700/30 transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold shrink-0 overflow-hidden">
+                      <div className="w-9 h-9 rounded-full bg-brand-sky flex items-center justify-center text-white text-sm font-bold shrink-0 overflow-hidden">
                         {u.image ? <Image src={u.image} alt="" width={36} height={36} className="rounded-full" /> : (u.fullName ?? u.name ?? u.email)[0]}
                       </div>
                       <div className="min-w-0">
@@ -140,7 +140,7 @@ export default function AdminMembersPage() {
                           value={u.role}
                           disabled={updatingId === u.id}
                           onChange={e => handleRoleChange(u.id, e.target.value)}
-                          className="bg-slate-700 border border-slate-600 text-slate-200 text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-blue-500 disabled:opacity-60"
+                          className="bg-brand-navy-700 border border-brand-navy-700 text-slate-200 text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-blue-500 disabled:opacity-60"
                         >
                           <option value="guest">ゲスト</option>
                           <option value="member">正会員</option>

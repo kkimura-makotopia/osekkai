@@ -22,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={inter.className}>
         <Providers>
           <Navbar />
-          <main className="min-h-screen bg-slate-950 text-white">
+          <main className="min-h-screen bg-brand-navy-950 text-white">
             <ProfileGuard>{children}</ProfileGuard>
           </main>
         </Providers>

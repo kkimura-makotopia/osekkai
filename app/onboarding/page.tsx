@@ -89,26 +89,26 @@ export default function OnboardingPage() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-slate-800 border border-slate-700 rounded-2xl p-6 space-y-4">
+      <form onSubmit={handleSubmit} className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-6 space-y-4">
         <div>
           <label className="text-slate-300 text-sm block mb-1">氏名 <span className="text-red-400">*</span></label>
           <input required value={form.fullName}
             onChange={e => setForm(p => ({ ...p, fullName: e.target.value }))}
             placeholder="山田 太郎"
-            className="w-full bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500" />
+            className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500" />
         </div>
         <div>
           <label className="text-slate-300 text-sm block mb-1">会社名 <span className="text-red-400">*</span></label>
           <input required value={form.company}
             onChange={e => setForm(p => ({ ...p, company: e.target.value }))}
             placeholder="株式会社サンプル"
-            className="w-full bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500" />
+            className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500" />
         </div>
         <div>
           <label className="text-slate-300 text-sm block mb-1">役職 <span className="text-red-400">*</span></label>
           <select required value={form.jobTitle}
             onChange={e => setForm(p => ({ ...p, jobTitle: e.target.value }))}
-            className="w-full bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+            className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500">
             <option value="">選択してください</option>
             {JOB_TITLES.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
@@ -118,7 +118,7 @@ export default function OnboardingPage() {
           <label className="text-slate-300 text-sm block mb-1">業界 <span className="text-red-400">*</span></label>
           <select required value={form.industry}
             onChange={e => setForm(p => ({ ...p, industry: e.target.value }))}
-            className="w-full bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+            className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500">
             <option value="">選択してください</option>
             {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
           </select>
@@ -128,13 +128,13 @@ export default function OnboardingPage() {
           <input required type="number" min="0" value={form.employeeCount}
             onChange={e => setForm(p => ({ ...p, employeeCount: e.target.value === '' ? '' : Number(e.target.value) }))}
             placeholder="50"
-            className="w-full bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500" />
+            className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500" />
         </div>
 
         {err && <p className="text-red-400 text-sm">{err}</p>}
 
         <button type="submit" disabled={saving}
-          className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white py-3 rounded-xl font-medium transition-colors">
+          className="w-full bg-brand-sky hover:bg-brand-sky-400 disabled:opacity-60 text-white py-3 rounded-xl font-medium transition-colors">
           {saving ? '登録中...' : 'この内容で利用を開始'}
         </button>
       </form>

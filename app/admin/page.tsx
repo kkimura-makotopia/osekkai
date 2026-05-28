@@ -73,7 +73,7 @@ export default function AdminPage() {
       </div>
 
       {/* 会員数（ロール別内訳） */}
-      <Link href="/admin/members" className="block bg-gradient-to-br from-blue-600 to-blue-400 rounded-2xl p-5 mb-4 hover:scale-[1.01] transition-transform">
+      <Link href="/admin/members" className="block bg-gradient-to-br from-brand-navy to-brand-sky rounded-2xl p-5 mb-4 hover:scale-[1.01] transition-transform">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <div className="text-white/80 text-sm">会員数</div>

@@ -61,7 +61,7 @@ export default async function InvitePage({ params }: { params: { token: string }
         <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 mb-4">
           <p className="text-blue-200 text-sm mb-4">紹介者</p>
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center text-white text-xl font-bold overflow-hidden">
+            <div className="w-14 h-14 rounded-full bg-brand-sky flex items-center justify-center text-white text-xl font-bold overflow-hidden">
               {from.image ? <img src={from.image} alt="" className="w-full h-full object-cover" /> : (from.fullName ?? from.name ?? '?')[0]}
             </div>
             <div>

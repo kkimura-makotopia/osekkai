@@ -103,7 +103,7 @@ export default function ReferralPage() {
         </div>
         <button
           onClick={() => showForm ? setShowForm(false) : openForm()}
-          className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+          className="bg-brand-sky hover:bg-brand-sky-400 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors"
         >
           + 新しいリンクを作成
         </button>
@@ -111,7 +111,7 @@ export default function ReferralPage() {
 
       {/* Create Form */}
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-6">
+        <form onSubmit={handleCreate} className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-6 mb-6">
           <h2 className="text-lg font-semibold text-white mb-4">紹介リンクを作成</h2>
           <div className="space-y-4">
             <div>
@@ -120,7 +120,7 @@ export default function ReferralPage() {
                 required
                 value={form.toUserId}
                 onChange={e => setForm(p => ({ ...p, toUserId: e.target.value }))}
-                className="w-full bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"
               >
                 <option value="">選択してください</option>
                 {users.map(u => (
@@ -135,7 +135,7 @@ export default function ReferralPage() {
                   value={form.message}
                   onChange={e => { setMessageTouched(true); setForm(p => ({ ...p, message: e.target.value })) }}
                   rows={6}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 resize-none text-sm"
+                  className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 resize-none text-sm"
                 />
                 <p className="text-slate-500 text-xs mt-1">※ マイページで編集した内容が自動で挿入されます（このリンクだけ変更したい場合は直接編集可）</p>
               </div>
@@ -148,16 +148,16 @@ export default function ReferralPage() {
                   value={form.validDays}
                   onChange={e => setForm(p => ({ ...p, validDays: e.target.value }))}
                   placeholder="無期限の場合は空白"
-                  className="w-full bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                  className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
                 />
               </div>
             </div>
           </div>
           <div className="flex gap-3 mt-4">
-            <button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-xl text-sm font-medium disabled:opacity-60">
+            <button type="submit" disabled={saving} className="bg-brand-sky hover:bg-brand-sky-400 text-white px-5 py-2 rounded-xl text-sm font-medium disabled:opacity-60">
               {saving ? '作成中...' : '作成する'}
             </button>
-            <button type="button" onClick={() => { setShowForm(false); setForm({ toUserId: '', message: '', validDays: '' }); setMessageTouched(false) }} className="bg-slate-700 text-slate-300 px-5 py-2 rounded-xl text-sm hover:bg-slate-600">
+            <button type="button" onClick={() => { setShowForm(false); setForm({ toUserId: '', message: '', validDays: '' }); setMessageTouched(false) }} className="bg-brand-navy-700 text-slate-300 px-5 py-2 rounded-xl text-sm hover:bg-slate-600">
               キャンセル
             </button>
           </div>
@@ -176,7 +176,7 @@ export default function ReferralPage() {
           const isExpired = link.expiresAt && new Date(link.expiresAt) < new Date()
           const inviteUrl = getInviteUrl(link.token)
           return (
-            <div key={link.id} className={`bg-slate-800 border rounded-2xl p-5 ${!link.isActive || isExpired ? 'border-slate-700 opacity-60' : 'border-slate-700'}`}>
+            <div key={link.id} className={`bg-brand-navy-800 border rounded-2xl p-5 ${!link.isActive || isExpired ? 'border-brand-navy-700 opacity-60' : 'border-brand-navy-700'}`}>
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -187,14 +187,14 @@ export default function ReferralPage() {
                     {link.expiresAt && <span className="text-slate-400 text-xs">期限: {new Date(link.expiresAt).toLocaleDateString('ja-JP')}</span>}
                   </div>
                   {link.message && <p className="text-slate-300 text-sm mb-2">"{link.message}"</p>}
-                  <div className="flex items-center gap-2 bg-slate-700 rounded-lg px-3 py-2">
+                  <div className="flex items-center gap-2 bg-brand-navy-700 rounded-lg px-3 py-2">
                     <span className="text-slate-400 text-xs font-mono truncate flex-1">{inviteUrl}</span>
                   </div>
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <button
                     onClick={() => copyLink(link.token)}
-                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${copied === link.token ? 'bg-emerald-600 text-white' : 'bg-slate-700 hover:bg-slate-600 text-white'}`}
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${copied === link.token ? 'bg-emerald-600 text-white' : 'bg-brand-navy-700 hover:bg-slate-600 text-white'}`}
                   >
                     {copied === link.token ? '✓ コピー済み' : '📋 コピー'}
                   </button>

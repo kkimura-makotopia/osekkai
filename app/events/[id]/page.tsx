@@ -254,41 +254,41 @@ export default function EventDetailPage() {
       </Link>
 
       {/* Header */}
-      <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-6">
+      <div className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-6 mb-6">
         {editing ? (
           <div className="space-y-3">
             <div className="grid sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-slate-400 text-xs block mb-1">タイトル *</label>
                 <input value={editForm.title} onChange={e => setEditForm(p => ({ ...p, title: e.target.value }))}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
+                  className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
               </div>
               <div>
                 <label className="text-slate-400 text-xs block mb-1">開催日時 *</label>
                 <input type="datetime-local" value={editForm.heldAt} onChange={e => setEditForm(p => ({ ...p, heldAt: e.target.value }))}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
+                  className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
               </div>
               <div>
                 <label className="text-slate-400 text-xs block mb-1">場所</label>
                 <input value={editForm.location} onChange={e => setEditForm(p => ({ ...p, location: e.target.value }))}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
+                  className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
               </div>
               <div>
                 <label className="text-slate-400 text-xs block mb-1">概要</label>
                 <input value={editForm.description} onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
+                  className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
               </div>
             </div>
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="text-slate-400 text-xs">招待者 ({editInvitees.length}名選択中)</label>
                 <input value={inviteeSearch} onChange={e => setInviteeSearch(e.target.value)} placeholder="検索..."
-                  className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1 text-white text-xs w-48 focus:outline-none focus:border-blue-500" />
+                  className="bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-1 text-white text-xs w-48 focus:outline-none focus:border-blue-500" />
               </div>
-              <div className="bg-slate-900/50 border border-slate-700 rounded-xl p-3 max-h-40 overflow-y-auto">
+              <div className="bg-brand-navy-900/50 border border-brand-navy-700 rounded-xl p-3 max-h-40 overflow-y-auto">
                 <div className="grid sm:grid-cols-2 gap-1">
                   {filteredEditUsers.map(u => (
-                    <label key={u.id} className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-slate-700 cursor-pointer">
+                    <label key={u.id} className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-brand-navy-700 cursor-pointer">
                       <input type="checkbox" checked={editInvitees.includes(u.id)} onChange={() => toggleEditInvitee(u.id)} className="w-4 h-4 accent-blue-600" />
                       <span className="text-slate-200 text-xs truncate">{u.fullName ?? u.name ?? '-'}{u.company && <span className="text-slate-500 ml-1">· {u.company}</span>}</span>
                     </label>
@@ -297,10 +297,10 @@ export default function EventDetailPage() {
               </div>
             </div>
             <div className="flex gap-2">
-              <button onClick={handleEditSave} disabled={editSaving} className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg text-sm font-medium disabled:opacity-60">
+              <button onClick={handleEditSave} disabled={editSaving} className="bg-brand-sky hover:bg-brand-sky-400 text-white px-5 py-2 rounded-lg text-sm font-medium disabled:opacity-60">
                 {editSaving ? '保存中...' : '保存する'}
               </button>
-              <button onClick={() => setEditing(false)} className="bg-slate-700 text-slate-300 px-5 py-2 rounded-lg text-sm">キャンセル</button>
+              <button onClick={() => setEditing(false)} className="bg-brand-navy-700 text-slate-300 px-5 py-2 rounded-lg text-sm">キャンセル</button>
             </div>
           </div>
         ) : (
@@ -314,7 +314,7 @@ export default function EventDetailPage() {
             <div className="flex items-center gap-3">
               <div className="text-xs text-slate-500">主催: {event.creator.fullName ?? event.creator.name}</div>
               {isAdmin && (
-                <button onClick={startEdit} className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-sm">編集</button>
+                <button onClick={startEdit} className="bg-brand-navy-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-sm">編集</button>
               )}
             </div>
           </div>
@@ -324,7 +324,7 @@ export default function EventDetailPage() {
       <div className="grid lg:grid-cols-5 gap-6">
         {/* Invitees */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6">
+          <div className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-6">
             <h2 className="text-lg font-semibold text-white mb-4">参加者 ({inviteeUsers.length})</h2>
             {inviteeUsers.length === 0 ? (
               <p className="text-slate-500 text-sm">招待者がまだ設定されていません</p>
@@ -332,8 +332,8 @@ export default function EventDetailPage() {
               <div className="grid sm:grid-cols-2 gap-2">
                 {inviteeUsers.map(u => (
                   <button key={u.id} onClick={() => openUserModal(u.id)}
-                    className="flex items-center gap-2 bg-slate-700/40 hover:bg-slate-700 rounded-xl px-3 py-2 transition-colors text-left">
-                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden">
+                    className="flex items-center gap-2 bg-brand-navy-700/40 hover:bg-brand-navy-700 rounded-xl px-3 py-2 transition-colors text-left">
+                    <div className="w-8 h-8 rounded-full bg-brand-sky flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden">
                       {u.image ? <Image src={u.image} alt="" width={32} height={32} className="rounded-full" /> : (u.fullName ?? u.name ?? '?')[0]}
                     </div>
                     <div className="min-w-0">
@@ -354,7 +354,7 @@ export default function EventDetailPage() {
             <h2 className="text-lg font-semibold text-white">おせっかい</h2>
             <button
               onClick={() => setShowFbForm(!showFbForm)}
-              className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+              className="bg-brand-sky hover:bg-brand-sky-400 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors"
               disabled={fbTargets.length === 0}
             >
               {showFbForm ? '閉じる' : 'おせっかいを送る'}
@@ -368,7 +368,7 @@ export default function EventDetailPage() {
               { key: 'sent', label: `自分が送った (${sentFbs.length})` },
             ] as const).map(t => (
               <button key={t.key} onClick={() => setFbTab(t.key)}
-                className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${fbTab === t.key ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-white'}`}>
+                className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${fbTab === t.key ? 'bg-brand-sky text-white' : 'bg-brand-navy-800 text-slate-400 border border-brand-navy-700 hover:text-white'}`}>
                 {t.label}
               </button>
             ))}
@@ -377,15 +377,15 @@ export default function EventDetailPage() {
           {/* FB Form */}
           {showFbForm && (
             fbTargets.length === 0 ? (
-              <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4 text-slate-500 text-sm">
+              <div className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-4 text-slate-500 text-sm">
                 招待者がいないためおせっかいを送れません
               </div>
             ) : (
-              <form onSubmit={handleFbSubmit} className="bg-slate-800 border border-slate-700 rounded-2xl p-4 space-y-3">
+              <form onSubmit={handleFbSubmit} className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-4 space-y-3">
                 <div>
                   <label className="text-slate-400 text-xs block mb-1">送り先（招待者から選択）</label>
                   <select required value={fb.toUserId} onChange={e => setFb(p => ({ ...p, toUserId: e.target.value }))}
-                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-blue-500">
+                    className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-blue-500">
                     <option value="">選択...</option>
                     {fbTargets.map(u => (
                       <option key={u.id} value={u.id}>{u.fullName ?? u.name} {u.company ? `(${u.company})` : ''}</option>
@@ -397,7 +397,7 @@ export default function EventDetailPage() {
                   <div className="flex gap-2">
                     {FB_TYPE_OPTIONS.map(t => (
                       <button key={t} type="button" onClick={() => setFb(p => ({ ...p, type: t }))}
-                        className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${fb.type === t ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-400'}`}>
+                        className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${fb.type === t ? 'bg-brand-sky text-white' : 'bg-brand-navy-700 text-slate-400'}`}>
                         {FB_LABELS[t]}
                       </button>
                     ))}
@@ -406,13 +406,13 @@ export default function EventDetailPage() {
                 <div>
                   <label className="text-slate-400 text-xs block mb-1">内容</label>
                   <textarea required value={fb.content} onChange={e => setFb(p => ({ ...p, content: e.target.value }))}
-                    rows={8} className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 resize-y min-h-[180px]" />
+                    rows={8} className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 resize-y min-h-[180px]" />
                 </div>
                 <div className="flex gap-2">
-                  <button type="submit" disabled={savingFb} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-lg text-sm disabled:opacity-60">
+                  <button type="submit" disabled={savingFb} className="bg-brand-sky hover:bg-brand-sky-400 text-white px-4 py-1.5 rounded-lg text-sm disabled:opacity-60">
                     {savingFb ? '送信中...' : '送信'}
                   </button>
-                  <button type="button" onClick={() => setShowFbForm(false)} className="bg-slate-700 text-slate-300 px-4 py-1.5 rounded-lg text-sm">キャンセル</button>
+                  <button type="button" onClick={() => setShowFbForm(false)} className="bg-brand-navy-700 text-slate-300 px-4 py-1.5 rounded-lg text-sm">キャンセル</button>
                 </div>
               </form>
             )
@@ -439,7 +439,7 @@ export default function EventDetailPage() {
                 }
               }
               return (
-                <div key={f.id} className="bg-slate-800 border border-slate-700 rounded-xl p-4">
+                <div key={f.id} className="bg-brand-navy-800 border border-brand-navy-700 rounded-xl p-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${FB_COLORS[f.type] ?? FB_COLORS.other}`}>{FB_LABELS[f.type] ?? 'その他'}</span>
                     {!isEditing && (
@@ -459,19 +459,19 @@ export default function EventDetailPage() {
                       <div className="flex gap-2">
                         {FB_TYPE_OPTIONS.map(t => (
                           <button key={t} type="button" onClick={() => setFbEditForm(p => ({ ...p, type: t }))}
-                            className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${fbEditForm.type === t ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-400'}`}>
+                            className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${fbEditForm.type === t ? 'bg-brand-sky text-white' : 'bg-brand-navy-700 text-slate-400'}`}>
                             {FB_LABELS[t]}
                           </button>
                         ))}
                       </div>
                       <textarea value={fbEditForm.content} onChange={e => setFbEditForm(p => ({ ...p, content: e.target.value }))}
-                        rows={6} className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 resize-y min-h-[140px]" />
+                        rows={6} className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 resize-y min-h-[140px]" />
                       <div className="flex gap-2">
                         <button onClick={saveFbEdit} disabled={fbEditSaving || !fbEditForm.content.trim()}
-                          className="bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white px-4 py-1.5 rounded-lg text-xs">
+                          className="bg-brand-sky hover:bg-brand-sky-400 disabled:opacity-60 text-white px-4 py-1.5 rounded-lg text-xs">
                           {fbEditSaving ? '保存中...' : '保存'}
                         </button>
-                        <button onClick={cancelFbEdit} className="bg-slate-700 text-slate-300 px-4 py-1.5 rounded-lg text-xs">
+                        <button onClick={cancelFbEdit} className="bg-brand-navy-700 text-slate-300 px-4 py-1.5 rounded-lg text-xs">
                           キャンセル
                         </button>
                       </div>
@@ -509,11 +509,11 @@ export default function EventDetailPage() {
         const sns = Object.entries(u.snsLinks ?? {}).filter(([, v]) => v) as [string, string][]
         return (
           <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setSelectedUserId(null)}>
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center text-white text-xl font-bold overflow-hidden">
+                    <div className="w-14 h-14 rounded-full bg-brand-sky flex items-center justify-center text-white text-xl font-bold overflow-hidden">
                       {u.image ? <Image src={u.image} alt="" width={56} height={56} className="rounded-full" /> : (u.fullName ?? u.name ?? '?')[0]}
                     </div>
                     <div>
@@ -523,7 +523,7 @@ export default function EventDetailPage() {
                   </div>
                   <button onClick={() => setSelectedUserId(null)} className="text-slate-400 hover:text-white text-xl leading-none">×</button>
                 </div>
-                <div className="space-y-1.5 mb-3 pb-3 border-b border-slate-700 text-xs">
+                <div className="space-y-1.5 mb-3 pb-3 border-b border-brand-navy-700 text-xs">
                   {u.email && (
                     <div className="flex gap-2"><span className="text-slate-500 w-20 shrink-0">メール:</span><a href={`mailto:${u.email}`} className="text-blue-400 hover:text-blue-300 truncate">{u.email}</a></div>
                   )}

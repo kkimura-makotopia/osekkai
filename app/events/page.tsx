@@ -53,7 +53,7 @@ export default function EventsPage() {
           <p className="text-slate-400 mt-1">過去・今後の交流会一覧</p>
         </div>
         {session?.role === 'admin' && (
-          <Link href="/admin/events" className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors">
+          <Link href="/admin/events" className="bg-brand-sky hover:bg-brand-sky-400 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors">
             + 新規作成
           </Link>
         )}
@@ -91,7 +91,7 @@ function EventCard({ event, upcoming, locked }: { event: Event; upcoming: boolea
   const date = new Date(event.heldAt)
   const inner = (
       <div className="flex items-start gap-4">
-        <div className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center shrink-0 ${upcoming ? 'bg-blue-600' : 'bg-slate-700'}`}>
+        <div className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center shrink-0 ${upcoming ? 'bg-brand-sky' : 'bg-brand-navy-700'}`}>
           <span className="text-white text-xs font-medium">{date.toLocaleDateString('ja-JP', { month: 'short' })}</span>
           <span className="text-white text-2xl font-bold leading-tight">{date.getDate()}</span>
         </div>
@@ -115,14 +115,14 @@ function EventCard({ event, upcoming, locked }: { event: Event; upcoming: boolea
     return (
       <div
         title="ゲストは詳細を閲覧できません"
-        className="block bg-slate-800 border border-slate-700 rounded-2xl p-5 opacity-70 cursor-not-allowed select-none"
+        className="block bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-5 opacity-70 cursor-not-allowed select-none"
       >
         {inner}
       </div>
     )
   }
   return (
-    <Link href={`/events/${event.id}`} className="block bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-2xl p-5 transition-colors group">
+    <Link href={`/events/${event.id}`} className="block bg-brand-navy-800 border border-brand-navy-700 hover:border-brand-navy-700 rounded-2xl p-5 transition-colors group">
       {inner}
     </Link>
   )
