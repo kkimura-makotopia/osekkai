@@ -27,8 +27,8 @@ interface EventDetail {
     type: string
     content: string
     createdAt: string
-    fromUser: { id: string; fullName: string | null; name: string | null; company: string | null; image: string | null }
-    toUser: { id: string; fullName: string | null; name: string | null; company: string | null; image: string | null }
+    fromUser: { id: string; fullName: string | null; name: string | null; company: string | null; image: string | null; role?: string }
+    toUser: { id: string; fullName: string | null; name: string | null; company: string | null; image: string | null; role?: string }
   }[]
 }
 
@@ -61,14 +61,19 @@ const SNS_LABELS: Record<string, string> = {
   website: 'Webサイト',
 }
 
-const FB_LABELS: Record<string, string> = { intro: '紹介', advice: '知見', other: 'その他', feedback: 'その他' }
+const FB_LABELS: Record<string, string> = {
+  intro: '知人の紹介',
+  feedback: 'サービスの紹介',
+  advice: 'ナレッジの共有',
+  other: 'その他',
+}
 const FB_COLORS: Record<string, string> = {
   intro: 'bg-blue-500/20 text-blue-400',
+  feedback: 'bg-emerald-500/20 text-emerald-400',
   advice: 'bg-purple-500/20 text-purple-400',
   other: 'bg-slate-500/20 text-slate-300',
-  feedback: 'bg-slate-500/20 text-slate-300',
 }
-const FB_TYPE_OPTIONS = ['intro', 'advice', 'other'] as const
+const FB_TYPE_OPTIONS = ['intro', 'feedback', 'advice', 'other'] as const
 type FbTab = 'received' | 'sent'
 
 // yyyy-mm-ddThh:mm 形式（datetime-local 用）
@@ -476,9 +481,17 @@ export default function EventDetailPage() {
                   )}
 
                   <div className="text-xs text-slate-500 flex items-center gap-2 flex-wrap">
-                    <button onClick={() => openUserModal(f.fromUser.id)} className="text-blue-400 hover:underline">{f.fromUser.fullName ?? f.fromUser.name}</button>
+                    {f.fromUser.role === 'guest' ? (
+                      <span className="text-slate-400">匿名</span>
+                    ) : (
+                      <button onClick={() => openUserModal(f.fromUser.id)} className="text-blue-400 hover:underline">{f.fromUser.fullName ?? f.fromUser.name}</button>
+                    )}
                     <span>→</span>
-                    <button onClick={() => openUserModal(f.toUser.id)} className="text-blue-400 hover:underline">{f.toUser.fullName ?? f.toUser.name}</button>
+                    {f.toUser.role === 'guest' ? (
+                      <span className="text-slate-400">匿名</span>
+                    ) : (
+                      <button onClick={() => openUserModal(f.toUser.id)} className="text-blue-400 hover:underline">{f.toUser.fullName ?? f.toUser.name}</button>
+                    )}
                     <span className="text-slate-500">· {new Date(f.createdAt).toLocaleDateString('ja-JP')}</span>
                   </div>
                 </div>
@@ -492,6 +505,7 @@ export default function EventDetailPage() {
       {selectedUserId && (() => {
         const u = allUsers.find(x => x.id === selectedUserId)
         if (!u) return null
+        if (u.role === 'guest') return null
         const sns = Object.entries(u.snsLinks ?? {}).filter(([, v]) => v) as [string, string][]
         return (
           <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setSelectedUserId(null)}>

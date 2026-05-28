@@ -38,12 +38,17 @@ interface Feedback {
   event: { id: string; title: string; heldAt: string } | null
 }
 
-const FB_LABELS: Record<string, string> = { intro: '紹介', advice: '知見', other: 'その他', feedback: 'その他' }
+const FB_LABELS: Record<string, string> = {
+  intro: '知人の紹介',
+  feedback: 'サービスの紹介',
+  advice: 'ナレッジの共有',
+  other: 'その他',
+}
 const FB_COLORS: Record<string, string> = {
   intro: 'bg-blue-500/20 text-blue-400',
+  feedback: 'bg-emerald-500/20 text-emerald-400',
   advice: 'bg-purple-500/20 text-purple-400',
   other: 'bg-slate-500/20 text-slate-300',
-  feedback: 'bg-slate-500/20 text-slate-300',
 }
 
 const SNS_LABELS: Record<string, string> = {
@@ -54,7 +59,7 @@ const SNS_LABELS: Record<string, string> = {
 }
 
 type Tab = 'received' | 'others'
-type FbFilter = 'all' | 'intro' | 'advice' | 'other'
+type FbFilter = 'all' | 'intro' | 'feedback' | 'advice' | 'other'
 
 const isGuest = (u: { role?: string } | null | undefined) => u?.role === 'guest'
 const displayName = (u: UserLite) =>
@@ -120,15 +125,13 @@ export default function FeedbacksPage() {
   }
 
   const visibleAll = tab === 'received' ? received : others
-  const visible = filter === 'all' ? visibleAll : visibleAll.filter(f => {
-    if (filter === 'other') return f.type === 'other' || f.type === 'feedback'
-    return f.type === filter
-  })
+  const visible = filter === 'all' ? visibleAll : visibleAll.filter(f => f.type === filter)
 
   const filterChips: { key: FbFilter; label: string }[] = [
     { key: 'all', label: 'すべて' },
-    { key: 'intro', label: '紹介' },
-    { key: 'advice', label: '知見' },
+    { key: 'intro', label: '知人の紹介' },
+    { key: 'feedback', label: 'サービスの紹介' },
+    { key: 'advice', label: 'ナレッジの共有' },
     { key: 'other', label: 'その他' },
   ]
 

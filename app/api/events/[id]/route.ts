@@ -15,8 +15,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       },
       feedbacks: {
         include: {
-          fromUser: { select: { id: true, fullName: true, name: true, company: true, image: true } },
-          toUser: { select: { id: true, fullName: true, name: true, company: true, image: true } },
+          fromUser: { select: { id: true, fullName: true, name: true, company: true, image: true, role: true } },
+          toUser: { select: { id: true, fullName: true, name: true, company: true, image: true, role: true } },
         },
         orderBy: { createdAt: 'desc' },
       },
