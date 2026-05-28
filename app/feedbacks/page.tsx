@@ -61,9 +61,9 @@ const SNS_LABELS: Record<string, string> = {
 type Tab = 'received' | 'others'
 type FbFilter = 'all' | 'intro' | 'feedback' | 'advice' | 'other'
 
-const isGuest = (u: { role?: string } | null | undefined) => u?.role === 'guest'
+const isGuestUser = (u: { role?: string } | null | undefined) => u?.role === 'guest'
 const displayName = (u: UserLite) =>
-  isGuest(u) ? '匿名' : (u.fullName ?? u.name ?? '-')
+  isGuestUser(u) ? '匿名' : (u.fullName ?? u.name ?? '-')
 
 export default function FeedbacksPage() {
   const { data: session, status } = useSession()
@@ -107,6 +107,13 @@ export default function FeedbacksPage() {
 
   const myId = session?.dbUserId
   const isAdmin = session?.role === 'admin'
+  const viewerIsGuest = session?.role === 'guest'
+  // 「表示対象がゲスト」または「閲覧者がゲスト」のいずれかで匿名化
+  const shouldHide = (u: { id?: string; role?: string } | null | undefined) => {
+    if (!u) return false
+    if (u.id === myId) return false   // 自分自身は匿名化しない
+    return viewerIsGuest || u.role === 'guest'
+  }
   const received = feedbacks.filter(f => f.toUser.id === myId)
   const others = feedbacks.filter(f => f.fromUser.id !== myId && f.toUser.id !== myId)
 
@@ -135,9 +142,9 @@ export default function FeedbacksPage() {
     { key: 'other', label: 'その他' },
   ]
 
-  // 氏名クリック → ユーザー詳細ポップアップ（ゲストは開かない）
+  // 氏名クリック → ユーザー詳細ポップアップ（ゲスト対象 or 閲覧者がゲストなら開かない）
   const handleNameClick = (u: UserLite) => {
-    if (isGuest(u)) return
+    if (shouldHide(u)) return
     setOpenUserId(u.id)
   }
 
@@ -188,7 +195,7 @@ export default function FeedbacksPage() {
               </div>
               <p className="text-slate-200 text-sm line-clamp-3 mb-3">{f.content}</p>
               <p className="text-slate-500 text-xs mb-3">
-                {isGuest(f.fromUser) ? (
+                {shouldHide(f.fromUser) ? (
                   <span className="text-slate-400">匿名</span>
                 ) : (
                   <button onClick={() => handleNameClick(f.fromUser)} className="text-blue-400 hover:underline">
@@ -196,7 +203,7 @@ export default function FeedbacksPage() {
                   </button>
                 )}
                 {' → '}
-                {f.toUser.id === myId ? '自分' : isGuest(f.toUser) ? (
+                {f.toUser.id === myId ? '自分' : shouldHide(f.toUser) ? (
                   <span className="text-slate-400">匿名</span>
                 ) : (
                   <button onClick={() => handleNameClick(f.toUser)} className="text-blue-400 hover:underline">
@@ -242,7 +249,7 @@ export default function FeedbacksPage() {
               <div className="space-y-1.5 text-xs text-slate-400 pt-3 border-t border-slate-700 mb-4">
                 <div>
                   送信者:{' '}
-                  {isGuest(openFb.fromUser) ? (
+                  {shouldHide(openFb.fromUser) ? (
                     <span className="text-slate-300">匿名</span>
                   ) : (
                     <button onClick={() => handleNameClick(openFb.fromUser)} className="text-blue-400 hover:underline">
@@ -252,7 +259,7 @@ export default function FeedbacksPage() {
                 </div>
                 <div>
                   受信者:{' '}
-                  {openFb.toUser.id === myId ? '自分' : isGuest(openFb.toUser) ? (
+                  {openFb.toUser.id === myId ? '自分' : shouldHide(openFb.toUser) ? (
                     <span className="text-slate-300">匿名</span>
                   ) : (
                     <button onClick={() => handleNameClick(openFb.toUser)} className="text-blue-400 hover:underline">
@@ -281,8 +288,8 @@ export default function FeedbacksPage() {
       {/* 会員詳細ポップアップ */}
       {openUserId && (() => {
         const u = allUsers.find(x => x.id === openUserId)
-        if (!u || u.role === 'guest') {
-          // データが取れない or ゲストの場合は閉じる
+        if (!u || u.role === 'guest' || viewerIsGuest) {
+          // データが取れない / 表示対象がゲスト / 閲覧者がゲスト の場合は開かない
           return null
         }
         const sns = Object.entries(u.snsLinks ?? {}).filter(([, v]) => v) as [string, string][]
