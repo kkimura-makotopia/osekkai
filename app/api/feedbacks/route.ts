@@ -15,8 +15,8 @@ export async function GET(req: NextRequest) {
       ...(userId ? { OR: [{ fromUserId: userId }, { toUserId: userId }] } : {}),
     },
     include: {
-      fromUser: { select: { id: true, fullName: true, name: true, company: true, image: true } },
-      toUser: { select: { id: true, fullName: true, name: true, company: true, image: true } },
+      fromUser: { select: { id: true, fullName: true, name: true, company: true, image: true, role: true } },
+      toUser: { select: { id: true, fullName: true, name: true, company: true, image: true, role: true } },
       event: { select: { id: true, title: true, heldAt: true } },
     },
     orderBy: { createdAt: 'desc' },
@@ -33,8 +33,8 @@ export async function POST(req: NextRequest) {
   const feedback = await prisma.feedback.create({
     data: { fromUserId: session.dbUserId, toUserId, eventId: eventId ?? null, type, content },
     include: {
-      fromUser: { select: { id: true, fullName: true, name: true, company: true, image: true } },
-      toUser: { select: { id: true, fullName: true, name: true, company: true, image: true } },
+      fromUser: { select: { id: true, fullName: true, name: true, company: true, image: true, role: true } },
+      toUser: { select: { id: true, fullName: true, name: true, company: true, image: true, role: true } },
     },
   })
   return NextResponse.json(feedback, { status: 201 })

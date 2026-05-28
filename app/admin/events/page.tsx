@@ -37,8 +37,6 @@ export default function AdminEventsPage() {
   const [form, setForm] = useState({ title: '', heldAt: '', location: '', description: '' })
   const [selectedInvitees, setSelectedInvitees] = useState<string[]>([])
   const [inviteeSearch, setInviteeSearch] = useState('')
-  const [pdfFile, setPdfFile] = useState<File | null>(null)
-  const [pdfError, setPdfError] = useState('')
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -63,18 +61,6 @@ export default function AdminEventsPage() {
     setSelectedInvitees(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
   }
 
-  const readFileAsBase64 = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => {
-        const result = reader.result as string
-        const comma = result.indexOf(',')
-        resolve(comma >= 0 ? result.slice(comma + 1) : result)
-      }
-      reader.onerror = () => reject(reader.error)
-      reader.readAsDataURL(file)
-    })
-
   const handleDeleteEvent = async (ev: Event) => {
     if (!confirm(`交流会「${ev.title}」を削除しますか?\n\n※ この交流会に紐づく招待履歴・おせっかいも全て削除されます。\n※ 元に戻せません。`)) return
     const res = await fetch(`/api/events/${ev.id}`, { method: 'DELETE' })
@@ -90,29 +76,19 @@ export default function AdminEventsPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
-    setPdfError('')
-    if (pdfFile && pdfFile.size > 3 * 1024 * 1024) {
-      setPdfError('PDF は 3MB 以下にしてください')
-      return
-    }
     setSaving(true)
     try {
-      let issuePdfData: string | undefined
-      let issuePdfName: string | undefined
-      if (pdfFile) {
-        issuePdfData = await readFileAsBase64(pdfFile)
-        issuePdfName = pdfFile.name
-      }
+      // datetime-local の値はローカルタイムなので、Dateに通してISO化（UTC送信）
+      const heldAtIso = form.heldAt ? new Date(form.heldAt).toISOString() : ''
       const res = await fetch('/api/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, inviteeIds: selectedInvitees, issuePdfData, issuePdfName }),
+        body: JSON.stringify({ ...form, heldAt: heldAtIso, inviteeIds: selectedInvitees }),
       })
       if (res.ok) {
         setForm({ title: '', heldAt: '', location: '', description: '' })
         setSelectedInvitees([])
         setInviteeSearch('')
-        setPdfFile(null)
         setShowForm(false)
         loadAll()
       } else {
@@ -194,24 +170,6 @@ export default function AdminEventsPage() {
             </div>
           </div>
 
-          {/* PDF */}
-          <div className="mb-4">
-            <label className="text-slate-400 text-sm block mb-1">経営課題PDF（任意・3MBまで）</label>
-            <input
-              type="file"
-              accept=".pdf,application/pdf"
-              onChange={e => { const f = e.target.files?.[0] ?? null; setPdfFile(f); setPdfError('') }}
-              className="block w-full text-slate-300 text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-slate-700 file:text-white hover:file:bg-slate-600"
-            />
-            {pdfFile && (
-              <div className="mt-2 flex items-center gap-2 text-xs text-slate-400">
-                <span>📄 {pdfFile.name}</span>
-                <button type="button" onClick={() => setPdfFile(null)} className="text-red-400 hover:text-red-300">削除</button>
-              </div>
-            )}
-            {pdfError && <p className="text-red-400 text-xs mt-1">{pdfError}</p>}
-          </div>
-
           {/* Invitees */}
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
@@ -248,7 +206,7 @@ export default function AdminEventsPage() {
             <button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-xl text-sm font-medium disabled:opacity-60">
               {saving ? '作成中...' : '作成する'}
             </button>
-            <button type="button" onClick={() => { setShowForm(false); setSelectedInvitees([]); setInviteeSearch(''); setPdfFile(null); setPdfError('') }} className="bg-slate-700 text-slate-300 px-5 py-2 rounded-xl text-sm hover:bg-slate-600">
+            <button type="button" onClick={() => { setShowForm(false); setSelectedInvitees([]); setInviteeSearch('') }} className="bg-slate-700 text-slate-300 px-5 py-2 rounded-xl text-sm hover:bg-slate-600">
               キャンセル
             </button>
           </div>

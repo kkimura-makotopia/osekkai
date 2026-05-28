@@ -20,8 +20,6 @@ interface EventDetail {
   location: string | null
   description: string | null
   createdBy: string
-  issuePdfData: string | null
-  issuePdfName: string | null
   creator: { id: string; fullName: string | null; name: string | null; company: string | null }
   invitees: { user: InviteeUser }[]
   feedbacks: {
@@ -97,16 +95,10 @@ export default function EventDetailPage() {
   const [allUsers, setAllUsers] = useState<UserFull[]>([])
   const [editInvitees, setEditInvitees] = useState<string[]>([])
   const [inviteeSearch, setInviteeSearch] = useState('')
-  const [editPdfFile, setEditPdfFile] = useState<File | null>(null)
-  const [editPdfRemove, setEditPdfRemove] = useState(false)
-  const [editPdfError, setEditPdfError] = useState('')
   const [editSaving, setEditSaving] = useState(false)
 
   // 会員詳細モーダル
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
-
-  // PDF全画面モーダル
-  const [pdfOpen, setPdfOpen] = useState(false)
 
   // FB インライン編集
   const [editingFbId, setEditingFbId] = useState<string | null>(null)
@@ -173,18 +165,6 @@ export default function EventDetailPage() {
     })
   }, [status, session, id, router])
 
-  const readFileAsBase64 = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => {
-        const result = reader.result as string
-        const comma = result.indexOf(',')
-        resolve(comma >= 0 ? result.slice(comma + 1) : result)
-      }
-      reader.onerror = () => reject(reader.error)
-      reader.readAsDataURL(file)
-    })
-
   const startEdit = async () => {
     if (!event) return
     setEditForm({
@@ -194,9 +174,6 @@ export default function EventDetailPage() {
       description: event.description ?? '',
     })
     setEditInvitees(event.invitees.map(i => i.user.id))
-    setEditPdfFile(null)
-    setEditPdfRemove(false)
-    setEditPdfError('')
     setEditing(true)
     await loadAllUsersOnce()
   }
@@ -206,26 +183,15 @@ export default function EventDetailPage() {
   }
 
   const handleEditSave = async () => {
-    setEditPdfError('')
-    if (editPdfFile && editPdfFile.size > 3 * 1024 * 1024) {
-      setEditPdfError('PDF は 3MB 以下にしてください')
-      return
-    }
     setEditSaving(true)
     try {
+      const heldAtIso = editForm.heldAt ? new Date(editForm.heldAt).toISOString() : ''
       const payload: Record<string, unknown> = {
         title: editForm.title,
-        heldAt: editForm.heldAt,
+        heldAt: heldAtIso,
         location: editForm.location,
         description: editForm.description,
         inviteeIds: editInvitees,
-      }
-      if (editPdfFile) {
-        payload.issuePdfData = await readFileAsBase64(editPdfFile)
-        payload.issuePdfName = editPdfFile.name
-      } else if (editPdfRemove) {
-        payload.issuePdfData = null
-        payload.issuePdfName = null
       }
       const res = await fetch(`/api/events/${id}`, {
         method: 'PATCH',
@@ -325,34 +291,6 @@ export default function EventDetailPage() {
                 </div>
               </div>
             </div>
-            <div>
-              <label className="text-slate-400 text-xs block mb-1">経営課題PDF（任意・3MBまで）</label>
-              {event.issuePdfName && !editPdfRemove && !editPdfFile && (
-                <div className="mb-2 flex items-center gap-2 text-xs text-slate-300">
-                  <span>📄 {event.issuePdfName}</span>
-                  <button type="button" onClick={() => setEditPdfRemove(true)} className="text-red-400 hover:text-red-300">削除する</button>
-                </div>
-              )}
-              {editPdfRemove && (
-                <div className="mb-2 flex items-center gap-2 text-xs text-amber-400">
-                  <span>※ 保存すると既存のPDFが削除されます</span>
-                  <button type="button" onClick={() => setEditPdfRemove(false)} className="text-slate-300 hover:text-white">取り消す</button>
-                </div>
-              )}
-              <input
-                type="file"
-                accept=".pdf,application/pdf"
-                onChange={e => { const f = e.target.files?.[0] ?? null; setEditPdfFile(f); setEditPdfError(''); if (f) setEditPdfRemove(false) }}
-                className="block w-full text-slate-300 text-xs file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-slate-700 file:text-white hover:file:bg-slate-600"
-              />
-              {editPdfFile && (
-                <div className="mt-1 flex items-center gap-2 text-xs text-slate-400">
-                  <span>新ファイル: {editPdfFile.name}</span>
-                  <button type="button" onClick={() => setEditPdfFile(null)} className="text-red-400 hover:text-red-300">取消</button>
-                </div>
-              )}
-              {editPdfError && <p className="text-red-400 text-xs mt-1">{editPdfError}</p>}
-            </div>
             <div className="flex gap-2">
               <button onClick={handleEditSave} disabled={editSaving} className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg text-sm font-medium disabled:opacity-60">
                 {editSaving ? '保存中...' : '保存する'}
@@ -403,47 +341,6 @@ export default function EventDetailPage() {
             )}
           </div>
 
-          {/* 経営課題（PDF） */}
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-white">経営課題</h2>
-              {event.issuePdfName && (
-                <a
-                  href={`data:application/pdf;base64,${event.issuePdfData}`}
-                  download={event.issuePdfName}
-                  className="text-blue-400 hover:text-blue-300 text-xs"
-                >
-                  ダウンロード
-                </a>
-              )}
-            </div>
-            {event.issuePdfData ? (
-              <>
-                <div className="relative rounded-xl overflow-hidden border border-slate-700 bg-slate-900 group">
-                  <iframe
-                    src={`data:application/pdf;base64,${event.issuePdfData}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
-                    title={event.issuePdfName ?? 'issue.pdf'}
-                    style={{ width: 'calc(100% + 20px)' }}
-                    className="block h-[260px] pointer-events-none"
-                  />
-                  {/* クリック透過オーバーレイ → 拡大モーダル */}
-                  <button
-                    type="button"
-                    onClick={() => setPdfOpen(true)}
-                    aria-label="PDFを拡大表示"
-                    className="absolute inset-0 flex items-end justify-end p-3 bg-transparent hover:bg-black/10 transition-colors"
-                  >
-                    <span className="bg-slate-900/80 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                      クリックで拡大
-                    </span>
-                  </button>
-                </div>
-                {event.issuePdfName && <p className="text-slate-500 text-xs mt-2">📄 {event.issuePdfName}</p>}
-              </>
-            ) : (
-              <p className="text-slate-500 text-sm">経営課題PDFはまだ登録されていません</p>
-            )}
-          </div>
         </div>
 
         {/* Feedbacks */}
@@ -644,38 +541,6 @@ export default function EventDetailPage() {
         )
       })()}
 
-      {/* PDF 全画面モーダル */}
-      {pdfOpen && event.issuePdfData && (
-        <div
-          className="fixed inset-0 bg-black/80 z-50 flex flex-col p-4"
-          onClick={() => setPdfOpen(false)}
-        >
-          <div className="flex items-center justify-between mb-3 text-white" onClick={e => e.stopPropagation()}>
-            <p className="text-sm truncate">{event.issuePdfName ?? '経営課題PDF'}</p>
-            <div className="flex items-center gap-3">
-              <a
-                href={`data:application/pdf;base64,${event.issuePdfData}`}
-                download={event.issuePdfName ?? 'issue.pdf'}
-                className="text-blue-300 hover:text-blue-200 text-sm"
-              >
-                ダウンロード
-              </a>
-              <button
-                onClick={() => setPdfOpen(false)}
-                aria-label="閉じる"
-                className="text-white hover:text-slate-300 text-3xl leading-none w-9 h-9 flex items-center justify-center"
-              >×</button>
-            </div>
-          </div>
-          <div className="flex-1 bg-slate-900 rounded-xl overflow-hidden" onClick={e => e.stopPropagation()}>
-            <iframe
-              src={`data:application/pdf;base64,${event.issuePdfData}#toolbar=0&navpanes=0`}
-              title={event.issuePdfName ?? 'issue.pdf'}
-              className="w-full h-full"
-            />
-          </div>
-        </div>
-      )}
     </div>
   )
 }
