@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react'
 import { usePathname, useRouter } from 'next/navigation'
 
 // オンボード対象外（誘導ループ防止のため）
-const SKIP_PATHS = ['/login', '/onboarding', '/invite']
+const SKIP_PATHS = ['/login', '/onboarding', '/invite', '/help']
 
 interface MeCheck {
   id: string

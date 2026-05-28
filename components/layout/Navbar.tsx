@@ -78,6 +78,18 @@ export function Navbar() {
 
         {/* User menu */}
         <div className="flex items-center gap-2">
+          <Link
+            href="/help"
+            aria-label="使い方"
+            title="使い方"
+            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
+              pathname === '/help'
+                ? 'bg-blue-600 text-white'
+                : 'bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white'
+            }`}
+          >
+            ?
+          </Link>
           <span className={`hidden sm:inline text-xs px-2 py-0.5 rounded-full font-medium ${roleBadge.className}`}>{roleBadge.label}</span>
           {session.user?.image ? (
             <Image
