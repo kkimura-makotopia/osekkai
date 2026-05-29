@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { INDUSTRIES } from '@/lib/industries'
 import { JOB_TITLES } from '@/lib/jobTitles'
+import { REVENUE_RANGES, FISCAL_MONTHS, MARKETING_CHANNELS } from '@/lib/profileOptions'
 
 interface UserProfile {
   id: string
@@ -16,6 +17,10 @@ interface UserProfile {
   bio: string | null
   industry: string | null
   employeeCount: number | null
+  recentRevenue: string | null
+  fiscalMonth: number | null
+  targetRevenueScale: string | null
+  marketingChannels: string[]
   image: string | null
   role: string
   snsLinks: Record<string, string>
@@ -23,16 +28,35 @@ interface UserProfile {
 
 const SNS_FIELDS = [
   { key: 'twitter', label: 'X (Twitter)', placeholder: 'https://x.com/...' },
-  { key: 'linkedin', label: 'LinkedIn', placeholder: 'https://linkedin.com/in/...' },
   { key: 'facebook', label: 'Facebook', placeholder: 'https://facebook.com/...' },
   { key: 'website', label: 'Webサイト', placeholder: 'https://...' },
 ]
+
+interface FormState {
+  fullName: string
+  company: string
+  jobTitle: string
+  bio: string
+  industry: string
+  employeeCount: string | number
+  recentRevenue: string
+  fiscalMonth: string | number
+  targetRevenueScale: string
+  marketingChannels: string[]
+  snsLinks: Record<string, string>
+}
+
+const emptyForm: FormState = {
+  fullName: '', company: '', jobTitle: '', bio: '', industry: '', employeeCount: '',
+  recentRevenue: '', fiscalMonth: '', targetRevenueScale: '', marketingChannels: [],
+  snsLinks: {},
+}
 
 export default function MyPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [form, setForm] = useState({ fullName: '', company: '', jobTitle: '', bio: '', industry: '', employeeCount: '' as string | number | '', snsLinks: {} as Record<string, string> })
+  const [form, setForm] = useState<FormState>(emptyForm)
   const [editing, setEditing] = useState(true)
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -52,12 +76,25 @@ export default function MyPage() {
           bio: me.bio ?? '',
           industry: me.industry ?? '',
           employeeCount: me.employeeCount ?? '',
+          recentRevenue: me.recentRevenue ?? '',
+          fiscalMonth: me.fiscalMonth ?? '',
+          targetRevenueScale: me.targetRevenueScale ?? '',
+          marketingChannels: Array.isArray(me.marketingChannels) ? me.marketingChannels : [],
           snsLinks: (me.snsLinks as Record<string, string>) ?? {},
         })
       }
       setLoading(false)
     })
   }, [status, session, router])
+
+  const toggleChannel = (c: string) => {
+    setForm(p => ({
+      ...p,
+      marketingChannels: p.marketingChannels.includes(c)
+        ? p.marketingChannels.filter(x => x !== c)
+        : [...p.marketingChannels, c],
+    }))
+  }
 
   const handleSave = async () => {
     setSaving(true)
@@ -74,8 +111,10 @@ export default function MyPage() {
     setSaving(false)
   }
 
-  if (status === 'loading' || loading) return <div className="flex items-center justify-center min-h-screen"><div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full" /></div>
+  if (status === 'loading' || loading) return <div className="flex items-center justify-center min-h-screen"><div className="animate-spin w-8 h-8 border-2 border-brand-sky border-t-transparent rounded-full" /></div>
   if (!profile) return null
+
+  const monthLabel = (m: number | null) => m ? `${m}月` : '未設定'
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -96,7 +135,7 @@ export default function MyPage() {
           </div>
           <button
             onClick={() => setEditing(!editing)}
-            className="bg-brand-navy-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+            className="bg-brand-navy-700 hover:bg-brand-navy-900 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors"
           >
             {editing ? '閉じる' : '編集'}
           </button>
@@ -108,17 +147,17 @@ export default function MyPage() {
               <div>
                 <label className="text-slate-400 text-sm block mb-1">氏名</label>
                 <input value={form.fullName} onChange={e => setForm(p => ({ ...p, fullName: e.target.value }))}
-                  className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
+                  className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-sky" />
               </div>
               <div>
                 <label className="text-slate-400 text-sm block mb-1">会社名</label>
                 <input value={form.company} onChange={e => setForm(p => ({ ...p, company: e.target.value }))}
-                  className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
+                  className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-sky" />
               </div>
               <div>
                 <label className="text-slate-400 text-sm block mb-1">役職</label>
                 <select value={form.jobTitle} onChange={e => setForm(p => ({ ...p, jobTitle: e.target.value }))}
-                  className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                  className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-sky">
                   <option value="">選択してください</option>
                   {JOB_TITLES.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
@@ -126,24 +165,66 @@ export default function MyPage() {
               <div>
                 <label className="text-slate-400 text-sm block mb-1">業界</label>
                 <select value={form.industry} onChange={e => setForm(p => ({ ...p, industry: e.target.value }))}
-                  className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                  className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-sky">
                   <option value="">選択してください</option>
                   {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-slate-400 text-sm block mb-1">従業員数（業務委託なども含む）</label>
+                <label className="text-slate-400 text-sm block mb-1">従業員数(業務委託なども含む)</label>
                 <input type="number" min="0" value={form.employeeCount}
                   onChange={e => setForm(p => ({ ...p, employeeCount: e.target.value === '' ? '' : Number(e.target.value) }))}
                   placeholder="例: 50"
-                  className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500" />
+                  className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-brand-sky" />
+              </div>
+              <div>
+                <label className="text-slate-400 text-sm block mb-1">決算月</label>
+                <select value={form.fiscalMonth} onChange={e => setForm(p => ({ ...p, fiscalMonth: e.target.value === '' ? '' : Number(e.target.value) }))}
+                  className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-sky">
+                  <option value="">選択してください</option>
+                  {FISCAL_MONTHS.map(m => <option key={m} value={m}>{m}月</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-slate-400 text-sm block mb-1">直近の確定している期の売上</label>
+                <select value={form.recentRevenue} onChange={e => setForm(p => ({ ...p, recentRevenue: e.target.value }))}
+                  className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-sky">
+                  <option value="">選択してください</option>
+                  {REVENUE_RANGES.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-slate-400 text-sm block mb-1">メイン商材のターゲット売上規模</label>
+                <select value={form.targetRevenueScale} onChange={e => setForm(p => ({ ...p, targetRevenueScale: e.target.value }))}
+                  className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-sky">
+                  <option value="">選択してください</option>
+                  {REVENUE_RANGES.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
               </div>
             </div>
+
+            {/* マーケティングチャネル（複数選択） */}
+            <div>
+              <label className="text-slate-400 text-sm block mb-2">現在使っているマーケティングチャネル（複数選択可）</label>
+              <div className="grid sm:grid-cols-2 gap-1 bg-brand-navy-900 border border-brand-navy-700 rounded-xl p-3 max-h-64 overflow-y-auto">
+                {MARKETING_CHANNELS.map(c => {
+                  const on = form.marketingChannels.includes(c)
+                  return (
+                    <label key={c} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-brand-navy-700 cursor-pointer">
+                      <input type="checkbox" checked={on} onChange={() => toggleChannel(c)}
+                        className="w-4 h-4 accent-brand-sky" />
+                      <span className="text-slate-200 text-sm">{c}</span>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+
             <div>
               <label className="text-slate-400 text-sm block mb-1">自己紹介(経歴や事業内容)</label>
               <textarea value={form.bio} onChange={e => setForm(p => ({ ...p, bio: e.target.value }))}
                 rows={5} placeholder="経歴や現在の事業内容などを自由にご記入ください"
-                className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 resize-none" />
+                className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-brand-sky resize-none" />
             </div>
             <div>
               <label className="text-slate-400 text-sm block mb-2">SNSリンク</label>
@@ -155,7 +236,7 @@ export default function MyPage() {
                       value={form.snsLinks[field.key] ?? ''}
                       onChange={e => setForm(p => ({ ...p, snsLinks: { ...p.snsLinks, [field.key]: e.target.value } }))}
                       placeholder={field.placeholder}
-                      className="flex-1 bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-1.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500"
+                      className="flex-1 bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-1.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-sky"
                     />
                   </div>
                 ))}
@@ -168,26 +249,46 @@ export default function MyPage() {
             </div>
           </div>
         ) : (
-          <div>
-            {(profile.industry || profile.employeeCount != null) && (
-              <div className="flex gap-4 flex-wrap text-xs text-slate-400 mb-3">
-                {profile.industry && <span><span className="text-slate-500">業界:</span> <span className="text-slate-200">{profile.industry}</span></span>}
-                {profile.employeeCount != null && <span><span className="text-slate-500">従業員数:</span> <span className="text-slate-200">{profile.employeeCount}名</span></span>}
+          <div className="space-y-2">
+            <div className="grid sm:grid-cols-2 gap-x-6 gap-y-1.5 text-xs">
+              {profile.industry && <InfoRow label="業界" value={profile.industry} />}
+              {profile.employeeCount != null && <InfoRow label="従業員数" value={`${profile.employeeCount}名`} />}
+              {profile.fiscalMonth != null && <InfoRow label="決算月" value={monthLabel(profile.fiscalMonth)} />}
+              {profile.recentRevenue && <InfoRow label="直近期売上" value={profile.recentRevenue} />}
+              {profile.targetRevenueScale && <InfoRow label="ターゲット売上規模" value={profile.targetRevenueScale} />}
+            </div>
+            {profile.marketingChannels?.length > 0 && (
+              <div className="pt-2">
+                <p className="text-slate-500 text-xs mb-1">利用中マーケチャネル</p>
+                <div className="flex gap-1.5 flex-wrap">
+                  {profile.marketingChannels.map(c => (
+                    <span key={c} className="text-xs bg-brand-navy-700 text-slate-200 px-2 py-0.5 rounded-full">{c}</span>
+                  ))}
+                </div>
               </div>
             )}
-            {profile.bio && <p className="text-slate-300 text-sm mb-4 leading-relaxed whitespace-pre-wrap">{profile.bio}</p>}
-            {Object.entries(profile.snsLinks ?? {}).filter(([, v]) => v).length > 0 && (
-              <div className="flex gap-3 flex-wrap">
+            {profile.bio && <p className="text-slate-300 text-sm mt-4 leading-relaxed whitespace-pre-wrap">{profile.bio}</p>}
+            {Object.entries(profile.snsLinks ?? {}).filter(([k, v]) => v && SNS_FIELDS.some(f => f.key === k)).length > 0 && (
+              <div className="flex gap-3 flex-wrap pt-3">
                 {SNS_FIELDS.map(f => {
                   const url = (profile.snsLinks ?? {})[f.key]
                   if (!url) return null
-                  return <a key={f.key} href={url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 text-sm underline">{f.label}</a>
+                  return <a key={f.key} href={url} target="_blank" rel="noopener noreferrer" className="text-brand-sky-400 hover:text-brand-sky text-sm underline">{f.label}</a>
                 })}
               </div>
             )}
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex gap-2">
+      <span className="text-slate-500 w-32 shrink-0">{label}:</span>
+      <span className="text-slate-200">{value}</span>
     </div>
   )
 }

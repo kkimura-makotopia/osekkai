@@ -17,6 +17,10 @@ model User {
   bio       String?
   industry  String?
   employeeCount Int?
+  recentRevenue      String?  // 直近確定期の売上レンジ
+  fiscalMonth        Int?     // 決算月 (1-12)
+  targetRevenueScale String?  // メイン商材のターゲット売上規模
+  marketingChannels  Json     @default("[]")  // 使用中マーケチャネル (string[])
   googleId  String?  @unique
   image     String?
   role      Role     @default(guest)
