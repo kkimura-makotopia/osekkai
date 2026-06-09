@@ -32,6 +32,7 @@ interface UserProfile {
   serviceBreakdown: BreakdownItem[]
   customerCount: string | null
   revenueGrowth: string | null
+  revenueTarget3y: string | null
   image: string | null
   role: string
   snsLinks: Record<string, string>
@@ -62,6 +63,7 @@ interface FormState {
   serviceBreakdown: BreakdownItem[]
   customerCount: string
   revenueGrowth: string
+  revenueTarget3y: string
   snsLinks: Record<string, string>
 }
 
@@ -70,6 +72,7 @@ const emptyForm: FormState = {
   recentRevenue: '', fiscalMonth: '', targetRevenueScale: '', marketingChannels: [],
   foundingYear: '', fullTimeEmployees: '', branchCount: '', operatingMargin: '',
   serviceUnitPrice: '', serviceBreakdown: [], customerCount: '', revenueGrowth: '',
+  revenueTarget3y: '',
   snsLinks: {},
 }
 
@@ -130,6 +133,7 @@ export default function MyPage() {
             : [],
           customerCount: me.customerCount ?? '',
           revenueGrowth: me.revenueGrowth ?? '',
+          revenueTarget3y: me.revenueTarget3y ?? '',
           snsLinks: (me.snsLinks as Record<string, string>) ?? {},
         })
       }
@@ -318,6 +322,14 @@ export default function MyPage() {
                   className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-sky">
                   <option value="">選択してください</option>
                   {REVENUE_GROWTH_RATES.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
+              <div>
+                <FieldLabel field="revenueTarget3y">3年後の売上目標</FieldLabel>
+                <select value={form.revenueTarget3y} onChange={e => setForm(p => ({ ...p, revenueTarget3y: e.target.value }))}
+                  className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-sky">
+                  <option value="">選択してください</option>
+                  {REVENUE_RANGES.map(r => <option key={r} value={r}>{r}</option>)}
                 </select>
               </div>
             </div>

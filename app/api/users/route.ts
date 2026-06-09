@@ -15,6 +15,7 @@ export async function GET() {
       recentRevenue: true, fiscalMonth: true, targetRevenueScale: true, marketingChannels: true,
       foundingYear: true, fullTimeEmployees: true, branchCount: true, operatingMargin: true,
       serviceUnitPrice: true, serviceBreakdown: true, customerCount: true, revenueGrowth: true,
+      revenueTarget3y: true,
       image: true, role: true, snsLinks: true,
       referralTemplate: true, isActive: true, createdAt: true,
       _count: { select: { createdEvents: true, sentFeedbacks: true } },
@@ -68,6 +69,7 @@ export async function PATCH(req: NextRequest) {
       ...(body.serviceBreakdown !== undefined ? { serviceBreakdown: normBreakdown(body.serviceBreakdown) } : {}),
       ...(body.customerCount !== undefined ? { customerCount: normStr(body.customerCount) } : {}),
       ...(body.revenueGrowth !== undefined ? { revenueGrowth: normStr(body.revenueGrowth) } : {}),
+      ...(body.revenueTarget3y !== undefined ? { revenueTarget3y: normStr(body.revenueTarget3y) } : {}),
     },
   })
   return NextResponse.json(updated)

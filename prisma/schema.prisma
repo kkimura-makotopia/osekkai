@@ -29,6 +29,7 @@ model User {
   serviceBreakdown   Json     @default("[]")  // 売上構成比 [{name,percentage}]
   customerCount      String?  // 顧客数
   revenueGrowth      String?  // 3年前からの売上成長率
+  revenueTarget3y    String?  // 3年後の売上目標
   googleId  String?  @unique
   image     String?
   role      Role     @default(guest)

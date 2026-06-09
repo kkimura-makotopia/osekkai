@@ -10,6 +10,7 @@ export const PUBLIC_FIELDS = [
   'serviceUnitPrice',
   'bio',
   'snsLinks',
+  'email',
 ] as const
 
 export type PublicField = (typeof PUBLIC_FIELDS)[number]

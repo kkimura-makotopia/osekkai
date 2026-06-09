@@ -284,6 +284,9 @@ export default function FeedbackDetailPage() {
                   <button onClick={() => setOpenUserId(null)} className="text-slate-400 hover:text-white text-2xl leading-none w-8 h-8 flex items-center justify-center shrink-0">×</button>
                 </div>
                 <div className="space-y-1.5 text-xs mb-4">
+                  {u.email && (
+                    <div className="flex gap-2"><span className="text-slate-500 w-24 shrink-0">メール:</span><a href={`mailto:${u.email}`} className="text-brand-sky-400 hover:text-brand-sky truncate">{u.email}</a></div>
+                  )}
                   {u.industry && (
                     <div className="flex gap-2"><span className="text-slate-500 w-24 shrink-0">業界:</span><span className="text-slate-200">{u.industry}</span></div>
                   )}
