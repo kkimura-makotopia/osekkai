@@ -75,7 +75,8 @@ export default function FeedbacksPage() {
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<Tab>('received')
   const [filter, setFilter] = useState<FbFilter>('all')
-  const [eventFilter, setEventFilter] = useState<string>('all') // 'all' | 'none' | eventId
+  const [eventFilter, setEventFilter] = useState<string>('all')   // 'all' | eventId
+  const [senderFilter, setSenderFilter] = useState<string>('all') // 'all' | userId
   const [openFb, setOpenFb] = useState<Feedback | null>(null)
   const [openUserId, setOpenUserId] = useState<string | null>(null)
 
@@ -136,25 +137,29 @@ export default function FeedbacksPage() {
 
   const visibleAll = tab === 'received' ? received : others
   const byType = filter === 'all' ? visibleAll : visibleAll.filter(f => f.type === filter)
-  const visible = eventFilter === 'all'
-    ? byType
-    : eventFilter === 'none'
-      ? byType.filter(f => !f.event)
-      : byType.filter(f => f.event?.id === eventFilter)
+  const byEvent = eventFilter === 'all' ? byType : byType.filter(f => f.event?.id === eventFilter)
+  const visible = senderFilter === 'all' ? byEvent : byEvent.filter(f => f.fromUser.id === senderFilter)
 
-  const filterChips: { key: FbFilter; label: string }[] = [
-    { key: 'all', label: 'すべて' },
-    { key: 'intro', label: '知人の紹介' },
-    { key: 'feedback', label: 'サービスの紹介' },
-    { key: 'advice', label: 'ナレッジの共有' },
-    { key: 'other', label: 'その他' },
+  const TYPE_OPTIONS: { value: FbFilter; label: string }[] = [
+    { value: 'all', label: 'すべて' },
+    { value: 'intro', label: '知人の紹介' },
+    { value: 'feedback', label: 'サービスの紹介' },
+    { value: 'advice', label: 'ナレッジの共有' },
+    { value: 'other', label: 'その他' },
   ]
 
-  // 一覧から「紐づく交流会」のユニークなリストを抽出（タブの対象データから）
+  // 一覧から「紐づく交流会」のユニークなリスト
   const uniqueEvents = (() => {
     const map = new Map<string, { id: string; title: string; heldAt: string }>()
     visibleAll.forEach(f => { if (f.event) map.set(f.event.id, f.event) })
     return Array.from(map.values()).sort((a, b) => new Date(b.heldAt).getTime() - new Date(a.heldAt).getTime())
+  })()
+
+  // 一覧から「おせっかいを送った人（fromUser）」のユニークなリスト
+  const uniqueSenders = (() => {
+    const map = new Map<string, UserLite>()
+    visibleAll.forEach(f => { if (!map.has(f.fromUser.id)) map.set(f.fromUser.id, f.fromUser) })
+    return Array.from(map.values())
   })()
 
   // 氏名クリック → ユーザー詳細ポップアップ（ゲスト対象 or 閲覧者がゲストなら開かない）
@@ -184,32 +189,51 @@ export default function FeedbacksPage() {
         ))}
       </div>
 
-      {/* 種別フィルタ */}
-      <div className="flex gap-1.5 flex-wrap mb-3">
-        {filterChips.map(c => (
-          <button key={c.key} onClick={() => setFilter(c.key)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${filter === c.key ? 'bg-brand-sky text-white border-brand-sky' : 'bg-brand-navy-800 text-slate-400 border-brand-navy-700 hover:text-white'}`}>
-            {c.label}
-          </button>
-        ))}
-      </div>
+      {/* フィルタ群 */}
+      <div className="grid sm:grid-cols-3 gap-3 mb-4">
+        <div>
+          <label className="text-slate-400 text-xs block mb-1">種類で絞り込み</label>
+          <select
+            value={filter}
+            onChange={e => setFilter(e.target.value as FbFilter)}
+            className="w-full bg-brand-navy-800 border border-brand-navy-700 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:border-brand-sky"
+          >
+            {TYPE_OPTIONS.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
 
-      {/* 交流会フィルタ */}
-      <div className="flex items-center gap-2 mb-4">
-        <label className="text-slate-400 text-xs shrink-0">交流会で絞り込み:</label>
-        <select
-          value={eventFilter}
-          onChange={e => setEventFilter(e.target.value)}
-          className="bg-brand-navy-800 border border-brand-navy-700 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:border-brand-sky"
-        >
-          <option value="all">すべて</option>
-          <option value="none">交流会なし</option>
-          {uniqueEvents.map(ev => (
-            <option key={ev.id} value={ev.id}>
-              {ev.title}（{new Date(ev.heldAt).toLocaleDateString('ja-JP')}）
-            </option>
-          ))}
-        </select>
+        <div>
+          <label className="text-slate-400 text-xs block mb-1">交流会で絞り込み</label>
+          <select
+            value={eventFilter}
+            onChange={e => setEventFilter(e.target.value)}
+            className="w-full bg-brand-navy-800 border border-brand-navy-700 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:border-brand-sky"
+          >
+            <option value="all">すべて</option>
+            {uniqueEvents.map(ev => (
+              <option key={ev.id} value={ev.id}>
+                {ev.title}（{new Date(ev.heldAt).toLocaleDateString('ja-JP')}）
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="text-slate-400 text-xs block mb-1">おせっかいした人で絞り込み</label>
+          <select
+            value={senderFilter}
+            onChange={e => setSenderFilter(e.target.value)}
+            className="w-full bg-brand-navy-800 border border-brand-navy-700 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:border-brand-sky"
+          >
+            <option value="all">すべて</option>
+            {uniqueSenders.map(u => {
+              const label = shouldHide(u) ? '匿名' : `${u.fullName ?? u.name ?? '-'}${u.company ? ` (${u.company})` : ''}`
+              return <option key={u.id} value={u.id}>{label}</option>
+            })}
+          </select>
+        </div>
       </div>
 
       {visible.length === 0 ? (
