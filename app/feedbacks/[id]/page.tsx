@@ -14,6 +14,21 @@ interface UserLite {
   role?: string
 }
 
+interface UserFull {
+  id: string
+  email: string
+  fullName: string | null
+  name: string | null
+  company: string | null
+  jobTitle: string | null
+  industry: string | null
+  employeeCount: number | null
+  bio: string | null
+  image: string | null
+  role: string
+  snsLinks: Record<string, string>
+}
+
 interface FeedbackDetail {
   id: string
   type: string
@@ -44,12 +59,20 @@ const FB_COLORS: Record<string, string> = {
   other: 'bg-slate-500/20 text-slate-300',
 }
 
+const SNS_LABELS: Record<string, string> = {
+  twitter: 'X (Twitter)',
+  facebook: 'Facebook',
+  website: 'Webサイト',
+}
+
 export default function FeedbackDetailPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const { id } = useParams<{ id: string }>()
   const [fb, setFb] = useState<FeedbackDetail | null>(null)
   const [comments, setComments] = useState<Comment[]>([])
+  const [allUsers, setAllUsers] = useState<UserFull[]>([])
+  const [openUserId, setOpenUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [content, setContent] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -59,9 +82,10 @@ export default function FeedbackDetailPage() {
     if (status !== 'authenticated') return
     ;(async () => {
       try {
-        const [fbRes, comRes] = await Promise.all([
+        const [fbRes, comRes, usRes] = await Promise.all([
           fetch(`/api/feedbacks/${id}`),
           fetch(`/api/feedbacks/${id}/comments`),
+          fetch('/api/users'),
         ])
         if (fbRes.ok) {
           const data = await fbRes.json()
@@ -70,6 +94,10 @@ export default function FeedbackDetailPage() {
         if (comRes.ok) {
           const data = await comRes.json()
           if (Array.isArray(data)) setComments(data)
+        }
+        if (usRes.ok) {
+          const data = await usRes.json()
+          if (Array.isArray(data)) setAllUsers(data)
         }
       } catch (e) {
         console.warn('detail fetch failed', e)
@@ -90,8 +118,10 @@ export default function FeedbackDetailPage() {
     if (u.id === myId) return false
     return viewerIsGuest || u.role === 'guest'
   }
-  const nameOf = (u: UserLite) => shouldHide(u) ? '匿名' : (u.fullName ?? u.name ?? '-')
-  const companyOf = (u: UserLite) => shouldHide(u) ? '' : (u.company ?? '')
+  const handleNameClick = (u: UserLite) => {
+    if (shouldHide(u)) return
+    setOpenUserId(u.id)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -130,6 +160,16 @@ export default function FeedbackDetailPage() {
     }
   }
 
+  const renderUserText = (u: UserLite, fallbackSelf = false) => {
+    if (fallbackSelf && u.id === myId) return <span>自分</span>
+    if (shouldHide(u)) return <span>匿名</span>
+    return (
+      <button onClick={() => handleNameClick(u)} className="text-brand-sky-400 hover:underline">
+        {u.fullName ?? u.name ?? '-'}{u.company && ` (${u.company})`}
+      </button>
+    )
+  }
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       <Link href="/feedbacks" className="text-slate-400 hover:text-white text-sm mb-4 inline-flex items-center gap-1">
@@ -146,10 +186,10 @@ export default function FeedbackDetailPage() {
         <div className="bg-brand-navy-900/60 border border-brand-navy-700 rounded-xl p-4 mb-4">
           <p className="text-slate-200 text-sm whitespace-pre-wrap leading-relaxed">{fb.content}</p>
         </div>
-        <p className="text-slate-500 text-xs">
-          {shouldHide(fb.fromUser) ? '匿名' : `${nameOf(fb.fromUser)}${companyOf(fb.fromUser) ? ` (${companyOf(fb.fromUser)})` : ''}`}
-          {' → '}
-          {fb.toUser.id === myId ? '自分' : shouldHide(fb.toUser) ? '匿名' : `${nameOf(fb.toUser)}${companyOf(fb.toUser) ? ` (${companyOf(fb.toUser)})` : ''}`}
+        <p className="text-slate-500 text-xs flex items-center gap-2 flex-wrap">
+          {renderUserText(fb.fromUser)}
+          <span>→</span>
+          {renderUserText(fb.toUser, true)}
         </p>
       </div>
 
@@ -174,15 +214,18 @@ export default function FeedbackDetailPage() {
                     </div>
                   </>
                 ) : (
-                  <>
+                  <button
+                    onClick={() => handleNameClick(c.user)}
+                    className="flex items-center gap-2 min-w-0 hover:bg-brand-navy-700 rounded-lg px-1 py-0.5 -mx-1 transition-colors"
+                  >
                     <div className="w-8 h-8 rounded-full bg-brand-sky flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden">
                       {c.user.image ? <Image src={c.user.image} alt="" width={32} height={32} className="rounded-full" /> : (c.user.fullName ?? c.user.name ?? '?')[0]}
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-white text-sm font-medium truncate">{c.user.fullName ?? c.user.name ?? '-'}</p>
+                    <div className="min-w-0 text-left">
+                      <p className="text-brand-sky-400 hover:underline text-sm font-medium truncate">{c.user.fullName ?? c.user.name ?? '-'}</p>
                       {c.user.company && <p className="text-slate-500 text-xs truncate">{c.user.company}</p>}
                     </div>
-                  </>
+                  </button>
                 )}
                 <span className="text-slate-500 text-xs ml-auto shrink-0">{new Date(c.createdAt).toLocaleDateString('ja-JP')}</span>
                 {canDelete && (
@@ -215,6 +258,62 @@ export default function FeedbackDetailPage() {
           {submitting ? '投稿中...' : 'コメントを投稿'}
         </button>
       </form>
+
+      {/* 会員詳細ポップアップ */}
+      {openUserId && (() => {
+        const u = allUsers.find(x => x.id === openUserId)
+        if (!u || u.role === 'guest' || viewerIsGuest) return null
+        const sns = Object.entries(u.snsLinks ?? {}).filter(([, v]) => v) as [string, string][]
+        return (
+          <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setOpenUserId(null)}>
+            <div className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-14 h-14 rounded-full bg-brand-sky flex items-center justify-center text-white text-xl font-bold shrink-0 overflow-hidden">
+                      {u.image ? <Image src={u.image} alt="" width={56} height={56} className="rounded-full" /> : (u.fullName ?? u.name ?? '?')[0]}
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-white font-bold text-lg">{u.fullName ?? u.name ?? '-'}</h3>
+                      <p className="text-slate-400 text-sm">{u.company ?? ''}{u.jobTitle ? ` · ${u.jobTitle}` : ''}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setOpenUserId(null)} className="text-slate-400 hover:text-white text-2xl leading-none w-8 h-8 flex items-center justify-center shrink-0">×</button>
+                </div>
+                <div className="space-y-1.5 text-xs mb-4">
+                  {u.email && (
+                    <div className="flex gap-2"><span className="text-slate-500 w-20 shrink-0">メール:</span><a href={`mailto:${u.email}`} className="text-brand-sky-400 hover:text-brand-sky truncate">{u.email}</a></div>
+                  )}
+                  {u.industry && (
+                    <div className="flex gap-2"><span className="text-slate-500 w-20 shrink-0">業界:</span><span className="text-slate-200">{u.industry}</span></div>
+                  )}
+                  {u.employeeCount != null && (
+                    <div className="flex gap-2"><span className="text-slate-500 w-20 shrink-0">従業員数:</span><span className="text-slate-200">{u.employeeCount}名</span></div>
+                  )}
+                </div>
+                {u.bio && (
+                  <div className="pt-3 border-t border-brand-navy-700 mb-3">
+                    <p className="text-slate-400 text-xs mb-1">自己紹介</p>
+                    <p className="text-slate-200 text-sm whitespace-pre-wrap leading-relaxed">{u.bio}</p>
+                  </div>
+                )}
+                {sns.length > 0 && (
+                  <div className="pt-3 border-t border-brand-navy-700">
+                    <p className="text-slate-400 text-xs mb-2">SNS</p>
+                    <div className="flex gap-3 flex-wrap">
+                      {sns.map(([key, url]) => (
+                        <a key={key} href={url} target="_blank" rel="noopener noreferrer" className="text-brand-sky-400 hover:text-brand-sky text-sm underline">
+                          {SNS_LABELS[key] ?? key}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }

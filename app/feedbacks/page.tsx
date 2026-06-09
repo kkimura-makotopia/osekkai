@@ -75,6 +75,7 @@ export default function FeedbacksPage() {
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<Tab>('received')
   const [filter, setFilter] = useState<FbFilter>('all')
+  const [eventFilter, setEventFilter] = useState<string>('all') // 'all' | 'none' | eventId
   const [openFb, setOpenFb] = useState<Feedback | null>(null)
   const [openUserId, setOpenUserId] = useState<string | null>(null)
 
@@ -134,7 +135,12 @@ export default function FeedbacksPage() {
   }
 
   const visibleAll = tab === 'received' ? received : others
-  const visible = filter === 'all' ? visibleAll : visibleAll.filter(f => f.type === filter)
+  const byType = filter === 'all' ? visibleAll : visibleAll.filter(f => f.type === filter)
+  const visible = eventFilter === 'all'
+    ? byType
+    : eventFilter === 'none'
+      ? byType.filter(f => !f.event)
+      : byType.filter(f => f.event?.id === eventFilter)
 
   const filterChips: { key: FbFilter; label: string }[] = [
     { key: 'all', label: 'すべて' },
@@ -143,6 +149,13 @@ export default function FeedbacksPage() {
     { key: 'advice', label: 'ナレッジの共有' },
     { key: 'other', label: 'その他' },
   ]
+
+  // 一覧から「紐づく交流会」のユニークなリストを抽出（タブの対象データから）
+  const uniqueEvents = (() => {
+    const map = new Map<string, { id: string; title: string; heldAt: string }>()
+    visibleAll.forEach(f => { if (f.event) map.set(f.event.id, f.event) })
+    return Array.from(map.values()).sort((a, b) => new Date(b.heldAt).getTime() - new Date(a.heldAt).getTime())
+  })()
 
   // 氏名クリック → ユーザー詳細ポップアップ（ゲスト対象 or 閲覧者がゲストなら開かない）
   const handleNameClick = (u: UserLite) => {
@@ -172,13 +185,31 @@ export default function FeedbacksPage() {
       </div>
 
       {/* 種別フィルタ */}
-      <div className="flex gap-1.5 flex-wrap mb-4">
+      <div className="flex gap-1.5 flex-wrap mb-3">
         {filterChips.map(c => (
           <button key={c.key} onClick={() => setFilter(c.key)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${filter === c.key ? 'bg-brand-sky text-white border-blue-500' : 'bg-brand-navy-800 text-slate-400 border-brand-navy-700 hover:text-white'}`}>
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${filter === c.key ? 'bg-brand-sky text-white border-brand-sky' : 'bg-brand-navy-800 text-slate-400 border-brand-navy-700 hover:text-white'}`}>
             {c.label}
           </button>
         ))}
+      </div>
+
+      {/* 交流会フィルタ */}
+      <div className="flex items-center gap-2 mb-4">
+        <label className="text-slate-400 text-xs shrink-0">交流会で絞り込み:</label>
+        <select
+          value={eventFilter}
+          onChange={e => setEventFilter(e.target.value)}
+          className="bg-brand-navy-800 border border-brand-navy-700 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:border-brand-sky"
+        >
+          <option value="all">すべて</option>
+          <option value="none">交流会なし</option>
+          {uniqueEvents.map(ev => (
+            <option key={ev.id} value={ev.id}>
+              {ev.title}（{new Date(ev.heldAt).toLocaleDateString('ja-JP')}）
+            </option>
+          ))}
+        </select>
       </div>
 
       {visible.length === 0 ? (
@@ -196,38 +227,40 @@ export default function FeedbacksPage() {
                 <span className="text-slate-500 text-xs ml-auto">{new Date(f.createdAt).toLocaleDateString('ja-JP')}</span>
               </div>
               <p className="text-slate-200 text-sm line-clamp-3 mb-3">{f.content}</p>
-              <p className="text-slate-500 text-xs mb-3">
-                {shouldHide(f.fromUser) ? (
-                  <span className="text-slate-400">匿名</span>
-                ) : (
-                  <button onClick={() => handleNameClick(f.fromUser)} className="text-blue-400 hover:underline">
-                    {displayName(f.fromUser)}{f.fromUser.company && ` (${f.fromUser.company})`}
-                  </button>
-                )}
-                {' → '}
-                {f.toUser.id === myId ? '自分' : shouldHide(f.toUser) ? (
-                  <span className="text-slate-400">匿名</span>
-                ) : (
-                  <button onClick={() => handleNameClick(f.toUser)} className="text-blue-400 hover:underline">
-                    {displayName(f.toUser)}{f.toUser.company && ` (${f.toUser.company})`}
-                  </button>
-                )}
-              </p>
-              <div className="flex items-center gap-2 pt-2 border-t border-brand-navy-700">
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* アクションボタン群（名前の左側） */}
                 {isAdmin && (
                   <button
                     onClick={() => handleDelete(f.id)}
-                    className="bg-red-600/20 hover:bg-red-600/30 text-red-300 px-3 py-1.5 rounded-lg text-xs font-medium"
+                    className="bg-red-600/20 hover:bg-red-600/30 text-red-300 px-2.5 py-1 rounded-lg text-xs font-medium shrink-0"
                   >
                     削除
                   </button>
                 )}
                 <Link
                   href={`/feedbacks/${f.id}`}
-                  className="bg-brand-navy-700 hover:bg-brand-navy-900 text-white px-3 py-1.5 rounded-lg text-xs font-medium"
+                  className="bg-brand-navy-700 hover:bg-brand-navy-900 text-white px-2.5 py-1 rounded-lg text-xs font-medium shrink-0"
                 >
                   詳細・コメント ({f._count?.comments ?? 0})
                 </Link>
+                {/* 名前 */}
+                <p className="text-slate-500 text-xs flex items-center gap-1 flex-wrap ml-auto">
+                  {shouldHide(f.fromUser) ? (
+                    <span className="text-slate-400">匿名</span>
+                  ) : (
+                    <button onClick={() => handleNameClick(f.fromUser)} className="text-brand-sky-400 hover:underline">
+                      {displayName(f.fromUser)}{f.fromUser.company && ` (${f.fromUser.company})`}
+                    </button>
+                  )}
+                  <span>→</span>
+                  {f.toUser.id === myId ? '自分' : shouldHide(f.toUser) ? (
+                    <span className="text-slate-400">匿名</span>
+                  ) : (
+                    <button onClick={() => handleNameClick(f.toUser)} className="text-brand-sky-400 hover:underline">
+                      {displayName(f.toUser)}{f.toUser.company && ` (${f.toUser.company})`}
+                    </button>
+                  )}
+                </p>
               </div>
             </div>
           ))}
