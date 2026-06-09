@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
       fromUser: { select: { id: true, fullName: true, name: true, company: true, image: true, role: true } },
       toUser: { select: { id: true, fullName: true, name: true, company: true, image: true, role: true } },
       event: { select: { id: true, title: true, heldAt: true } },
+      _count: { select: { comments: true } },
     },
     orderBy: { createdAt: 'desc' },
   })

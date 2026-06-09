@@ -6,6 +6,22 @@ import { prisma } from '@/lib/prisma'
 const ALLOWED_TYPES = ['intro', 'advice', 'other', 'feedback'] as const
 type AllowedType = (typeof ALLOWED_TYPES)[number]
 
+export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions)
+  if (!session?.dbUserId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const fb = await prisma.feedback.findUnique({
+    where: { id: params.id },
+    include: {
+      fromUser: { select: { id: true, fullName: true, name: true, company: true, image: true, role: true } },
+      toUser: { select: { id: true, fullName: true, name: true, company: true, image: true, role: true } },
+      event: { select: { id: true, title: true, heldAt: true } },
+    },
+  })
+  if (!fb) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  return NextResponse.json(fb)
+}
+
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions)
   if (!session?.dbUserId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

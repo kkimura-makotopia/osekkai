@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import Image from 'next/image'
 
 interface UserLite {
@@ -36,6 +37,7 @@ interface Feedback {
   fromUser: UserLite
   toUser: UserLite
   event: { id: string; title: string; heldAt: string } | null
+  _count?: { comments: number }
 }
 
 const FB_LABELS: Record<string, string> = {
@@ -220,12 +222,12 @@ export default function FeedbacksPage() {
                     削除
                   </button>
                 )}
-                <button
-                  onClick={() => setOpenFb(f)}
-                  className="bg-brand-navy-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium"
+                <Link
+                  href={`/feedbacks/${f.id}`}
+                  className="bg-brand-navy-700 hover:bg-brand-navy-900 text-white px-3 py-1.5 rounded-lg text-xs font-medium"
                 >
-                  詳細
-                </button>
+                  詳細・コメント ({f._count?.comments ?? 0})
+                </Link>
               </div>
             </div>
           ))}

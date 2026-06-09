@@ -35,6 +35,7 @@ model User {
   receivedFeedbacks Feedback[]        @relation("ReceivedFeedbacks")
   referralLinks     ReferralLink[]
   invitedEvents     EventInvitee[]
+  feedbackComments  FeedbackComment[]
 
   @@map("users")
 }
@@ -95,7 +96,23 @@ model Feedback {
   linkToken  String?
   createdAt  DateTime       @default(now())
 
+  comments   FeedbackComment[]
+
   @@map("feedbacks")
+}
+
+// ─── おせっかいへのコメント ──────────────────────────────────
+model FeedbackComment {
+  id         String   @id @default(cuid())
+  feedbackId String
+  feedback   Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content    String
+  createdAt  DateTime @default(now())
+
+  @@index([feedbackId])
+  @@map("feedback_comments")
 }
 
 enum FeedbackType {
