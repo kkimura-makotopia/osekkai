@@ -123,7 +123,10 @@ export default function MyPage() {
           operatingMargin: me.operatingMargin ?? '',
           serviceUnitPrice: me.serviceUnitPrice ?? '',
           serviceBreakdown: Array.isArray(me.serviceBreakdown)
-            ? me.serviceBreakdown.map(it => ({ name: it.name ?? '', percentage: typeof it.percentage === 'number' ? it.percentage : '' }))
+            ? (me.serviceBreakdown as { name?: string; percentage?: number }[]).map(it => ({
+                name: it.name ?? '',
+                percentage: typeof it.percentage === 'number' ? it.percentage : ('' as const),
+              }))
             : [],
           customerCount: me.customerCount ?? '',
           revenueGrowth: me.revenueGrowth ?? '',
