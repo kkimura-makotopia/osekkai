@@ -42,3 +42,27 @@ export const MARKETING_CHANNELS = [
 
 export type RevenueRange = (typeof REVENUE_RANGES)[number]
 export type MarketingChannel = (typeof MARKETING_CHANNELS)[number]
+
+// 営業利益率
+export const OPERATING_MARGINS = [
+  '赤字（マイナス）',
+  '0〜5%',
+  '5〜10%',
+  '10〜15%',
+  '15〜20%',
+  '20〜30%',
+  '30〜50%',
+  '50%以上',
+] as const
+
+// 3年前からの売上成長率
+export const REVENUE_GROWTH_RATES = [
+  '減少（マイナス成長）',
+  '0〜10%',
+  '10〜30%',
+  '30〜50%',
+  '50〜100%',
+  '100〜300%',
+  '300〜500%',
+  '500%以上',
+] as const

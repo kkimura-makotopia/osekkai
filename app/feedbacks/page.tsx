@@ -23,6 +23,9 @@ interface UserFull {
   jobTitle: string | null
   industry: string | null
   employeeCount: number | null
+  foundingYear: number | null
+  recentRevenue: string | null
+  serviceUnitPrice: string | null
   bio: string | null
   image: string | null
   role: string
@@ -369,14 +372,20 @@ export default function FeedbacksPage() {
                   <button onClick={() => setOpenUserId(null)} className="text-slate-400 hover:text-white text-2xl leading-none w-8 h-8 flex items-center justify-center shrink-0">×</button>
                 </div>
                 <div className="space-y-1.5 text-xs mb-4">
-                  {u.email && (
-                    <div className="flex gap-2"><span className="text-slate-500 w-20 shrink-0">メール:</span><a href={`mailto:${u.email}`} className="text-blue-400 hover:text-blue-300 truncate">{u.email}</a></div>
-                  )}
                   {u.industry && (
-                    <div className="flex gap-2"><span className="text-slate-500 w-20 shrink-0">業界:</span><span className="text-slate-200">{u.industry}</span></div>
+                    <div className="flex gap-2"><span className="text-slate-500 w-24 shrink-0">業界:</span><span className="text-slate-200">{u.industry}</span></div>
                   )}
                   {u.employeeCount != null && (
-                    <div className="flex gap-2"><span className="text-slate-500 w-20 shrink-0">従業員数:</span><span className="text-slate-200">{u.employeeCount}名</span></div>
+                    <div className="flex gap-2"><span className="text-slate-500 w-24 shrink-0">従業員数:</span><span className="text-slate-200">{u.employeeCount}名</span></div>
+                  )}
+                  {u.foundingYear != null && (
+                    <div className="flex gap-2"><span className="text-slate-500 w-24 shrink-0">設立年:</span><span className="text-slate-200">{u.foundingYear}年</span></div>
+                  )}
+                  {u.recentRevenue && (
+                    <div className="flex gap-2"><span className="text-slate-500 w-24 shrink-0">直近の売上:</span><span className="text-slate-200">{u.recentRevenue}</span></div>
+                  )}
+                  {u.serviceUnitPrice && (
+                    <div className="flex gap-2"><span className="text-slate-500 w-24 shrink-0">平均単価:</span><span className="text-slate-200">{u.serviceUnitPrice}</span></div>
                   )}
                 </div>
                 {u.bio && (

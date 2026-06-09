@@ -21,6 +21,14 @@ model User {
   fiscalMonth        Int?     // 決算月 (1-12)
   targetRevenueScale String?  // メイン商材のターゲット売上規模
   marketingChannels  Json     @default("[]")  // 使用中マーケチャネル (string[])
+  foundingYear       Int?     // 設立年
+  fullTimeEmployees  String?  // 正社員数
+  branchCount        String?  // 拠点数
+  operatingMargin    String?  // 営業利益率
+  serviceUnitPrice   String?  // サービス平均単価
+  serviceBreakdown   Json     @default("[]")  // 売上構成比 [{name,percentage}]
+  customerCount      String?  // 顧客数
+  revenueGrowth      String?  // 3年前からの売上成長率
   googleId  String?  @unique
   image     String?
   role      Role     @default(guest)
