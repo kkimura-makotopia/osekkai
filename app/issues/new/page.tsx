@@ -38,6 +38,8 @@ function NewIssueWizard() {
   const [issues, setIssues] = useState<EditableIssue[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [submittedEventIds, setSubmittedEventIds] = useState<Set<string>>(new Set())
+  const [qaIndex, setQaIndex] = useState(0)
 
   useEffect(() => {
     if (status === 'unauthenticated') { router.push('/login'); return }
@@ -47,7 +49,8 @@ function NewIssueWizard() {
     Promise.all([
       fetch('/api/events').then(r => r.json()),
       fetch('/api/users').then(r => r.json()),
-    ]).then(([ev, users]) => {
+      fetch('/api/issues').then(r => r.json()),
+    ]).then(([ev, users, subs]) => {
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       const upcoming = (Array.isArray(ev) ? ev : [])
@@ -56,6 +59,9 @@ function NewIssueWizard() {
       setEvents(upcoming)
       const me = Array.isArray(users) ? users.find((u: { id: string }) => u.id === session.dbUserId) : null
       if (me) setForm(profileToForm(me))
+      setSubmittedEventIds(new Set(
+        Array.isArray(subs) ? subs.map((s: { event: { id: string } }) => s.event.id) : []
+      ))
       const presetEvent = searchParams.get('eventId')
       if (presetEvent) setEventId(presetEvent)
       setLoading(false)
@@ -110,7 +116,11 @@ function NewIssueWizard() {
 
   const submit = async () => {
     setError('')
-    if (issues.some(i => !i.summary.trim())) { setError('各課題の「課題概要」を入力してください'); return }
+    if (issues.some(i => !i.summary.trim())) { setError('各相談の「見出し」を入力してください'); return }
+    if (submittedEventIds.has(eventId) &&
+        !confirm('このイベントには既に提出済みの経営課題があります。\n運営に提出すると、以前の内容は上書きされます。よろしいですか？')) {
+      return
+    }
     setSubmitting(true)
     const body = {
       eventId,
@@ -178,6 +188,11 @@ function NewIssueWizard() {
                   ))}
                 </select>
               )}
+              {eventId && submittedEventIds.has(eventId) && (
+                <div className="mt-2 bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs rounded-xl px-3 py-2">
+                  ⚠️ このイベントには既に提出済みの経営課題があります。このまま新規作成して提出すると、以前の内容は<strong>上書き</strong>されます。
+                </div>
+              )}
             </div>
 
             <div>
@@ -195,7 +210,7 @@ function NewIssueWizard() {
                     mode === 'qa' ? 'border-brand-sky bg-brand-sky/10' : 'border-brand-navy-700 bg-brand-navy-900/40 hover:border-brand-navy-700'
                   }`}>
                   <p className="text-white font-medium mb-1">② 質疑応答形式</p>
-                  <p className="text-slate-400 text-xs">9つの質問に答えると、AIが課題を導き出します。</p>
+                  <p className="text-slate-400 text-xs">質問に1問ずつ答えると、AIが課題を導き出します。</p>
                 </button>
               </div>
             </div>
@@ -232,37 +247,68 @@ function NewIssueWizard() {
             <p className="text-slate-300 text-sm">入力形式: <span className="text-brand-sky-400">{MODE_LABELS[mode]}</span></p>
 
             {mode === 'text' ? (
-              <div>
-                <label className="text-white font-medium mb-2 block">現在の事業の状況・お悩み</label>
-                <textarea value={sourceText} onChange={e => setSourceText(e.target.value)}
-                  rows={10} placeholder="事業の現状、伸び悩んでいること、課題に感じていることなどを自由にご記入ください。詳しく書くほどAIの精度が上がります。"
-                  className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-sky resize-none" />
-              </div>
+              <>
+                <div>
+                  <label className="text-white font-medium mb-2 block">現在の事業の状況・お悩み</label>
+                  <textarea value={sourceText} onChange={e => setSourceText(e.target.value)}
+                    rows={10} placeholder="事業の現状、伸び悩んでいること、課題に感じていることなどを自由にご記入ください。詳しく書くほどAIの精度が上がります。"
+                    className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-sky resize-none" />
+                </div>
+                <div className="flex justify-between items-center">
+                  <button onClick={() => setStep(1)} className="text-slate-300 hover:text-white px-4 py-2 text-sm">戻る</button>
+                  <button onClick={runAnalyze} disabled={analyzing || !sourceText.trim()}
+                    className="bg-brand-sky hover:bg-brand-sky-400 text-white px-6 py-2 rounded-xl text-sm font-medium disabled:opacity-50 flex items-center gap-2">
+                    {analyzing && <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />}
+                    {analyzing ? 'AIが解析中...' : 'AIで課題を抽出する'}
+                  </button>
+                </div>
+              </>
             ) : (
               <div className="space-y-4">
-                {QA_QUESTIONS.map((q, i) => (
-                  <div key={i}>
-                    <label className="text-slate-200 text-sm mb-1 block">
-                      <span className="text-brand-sky-400 font-bold mr-1">Q{i + 1}.</span>{q}
-                    </label>
-                    <textarea value={qaAnswers[i]}
-                      onChange={e => setQaAnswers(prev => prev.map((a, idx) => idx === i ? e.target.value : a))}
-                      rows={2}
-                      className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-brand-sky resize-none" />
-                  </div>
-                ))}
-                <p className="text-slate-500 text-xs text-right">{answeredCount} / {QA_QUESTIONS.length} 問 回答済み</p>
+                {/* 進捗 */}
+                <div className="flex items-center justify-between">
+                  <p className="text-brand-sky-400 text-sm font-bold">質問 {qaIndex + 1} / {QA_QUESTIONS.length}</p>
+                  <p className="text-slate-500 text-xs">{answeredCount} / {QA_QUESTIONS.length} 問 回答済み</p>
+                </div>
+                <div className="h-1 bg-brand-navy-700 rounded-full overflow-hidden">
+                  <div className="h-full bg-brand-sky transition-all" style={{ width: `${((qaIndex + 1) / QA_QUESTIONS.length) * 100}%` }} />
+                </div>
+
+                {/* 1問ずつ表示 */}
+                <div className="bg-brand-navy-900/40 border border-brand-navy-700 rounded-xl p-4">
+                  <label className="text-white text-base mb-3 block leading-relaxed">
+                    <span className="text-brand-sky-400 font-bold mr-1">Q{qaIndex + 1}.</span>{QA_QUESTIONS[qaIndex]}
+                  </label>
+                  <textarea
+                    key={qaIndex}
+                    value={qaAnswers[qaIndex]}
+                    onChange={e => setQaAnswers(prev => prev.map((a, idx) => idx === qaIndex ? e.target.value : a))}
+                    rows={4} autoFocus placeholder="回答を入力してください（任意・スキップ可）"
+                    className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-sky resize-none" />
+                </div>
+
+                {/* ナビ */}
+                <div className="flex justify-between items-center">
+                  <button
+                    onClick={() => (qaIndex === 0 ? setStep(1) : setQaIndex(i => i - 1))}
+                    className="text-slate-300 hover:text-white px-4 py-2 text-sm">
+                    {qaIndex === 0 ? '戻る' : '← 前の質問'}
+                  </button>
+                  {qaIndex < QA_QUESTIONS.length - 1 ? (
+                    <button onClick={() => setQaIndex(i => i + 1)}
+                      className="bg-brand-navy-700 hover:bg-brand-navy-900 text-white px-6 py-2 rounded-xl text-sm font-medium">
+                      次の質問 →
+                    </button>
+                  ) : (
+                    <button onClick={runAnalyze} disabled={analyzing || answeredCount === 0}
+                      className="bg-brand-sky hover:bg-brand-sky-400 text-white px-6 py-2 rounded-xl text-sm font-medium disabled:opacity-50 flex items-center gap-2">
+                      {analyzing && <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />}
+                      {analyzing ? 'AIが解析中...' : 'AIで課題を抽出する'}
+                    </button>
+                  )}
+                </div>
               </div>
             )}
-
-            <div className="flex justify-between items-center">
-              <button onClick={() => setStep(1)} className="text-slate-300 hover:text-white px-4 py-2 text-sm">戻る</button>
-              <button onClick={runAnalyze} disabled={analyzing || (mode === 'text' ? !sourceText.trim() : answeredCount === 0)}
-                className="bg-brand-sky hover:bg-brand-sky-400 text-white px-6 py-2 rounded-xl text-sm font-medium disabled:opacity-50 flex items-center gap-2">
-                {analyzing && <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />}
-                {analyzing ? 'AIが解析中...' : 'AIで課題を抽出する'}
-              </button>
-            </div>
           </div>
         )}
 
@@ -278,7 +324,7 @@ function NewIssueWizard() {
               <button onClick={() => setStep(2)} className="text-slate-300 hover:text-white px-4 py-2 text-sm">入力に戻る</button>
               <button onClick={submit} disabled={submitting}
                 className="bg-brand-sky hover:bg-brand-sky-400 text-white px-6 py-2 rounded-xl text-sm font-medium disabled:opacity-60">
-                {submitting ? '提出中...' : '提出する'}
+                {submitting ? '提出中...' : '運営に提出する'}
               </button>
             </div>
           </div>
