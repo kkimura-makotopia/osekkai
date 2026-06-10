@@ -48,7 +48,12 @@ function NewIssueWizard() {
       fetch('/api/events').then(r => r.json()),
       fetch('/api/users').then(r => r.json()),
     ]).then(([ev, users]) => {
-      setEvents(Array.isArray(ev) ? ev : [])
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const upcoming = (Array.isArray(ev) ? ev : [])
+        .filter((e: EventLite) => new Date(e.heldAt) >= today)
+        .sort((a: EventLite, b: EventLite) => new Date(a.heldAt).getTime() - new Date(b.heldAt).getTime())
+      setEvents(upcoming)
       const me = Array.isArray(users) ? users.find((u: { id: string }) => u.id === session.dbUserId) : null
       if (me) setForm(profileToForm(me))
       const presetEvent = searchParams.get('eventId')
@@ -210,7 +215,7 @@ function NewIssueWizard() {
             <div className="bg-brand-navy-900/40 border border-brand-navy-700 rounded-xl p-3 text-xs text-slate-300">
               マイページの情報を補完しています。新しく入力・修正した内容は<strong className="text-brand-sky-400"> マイページにも反映 </strong>されます。AI解析の精度向上に使われます。
             </div>
-            <ProfileFieldsForm form={form} setForm={setForm} />
+            <ProfileFieldsForm form={form} setForm={setForm} hideBioSns />
             <div className="flex justify-between">
               <button onClick={() => setStep(0)} className="text-slate-300 hover:text-white px-4 py-2 text-sm">戻る</button>
               <button onClick={saveProfileAndNext} disabled={savingProfile}
@@ -264,8 +269,9 @@ function NewIssueWizard() {
         {/* STEP 3: 確認・提出 */}
         {step === 3 && (
           <div className="space-y-4">
-            <div className="bg-brand-navy-900/40 border border-brand-navy-700 rounded-xl p-3 text-xs text-slate-300">
-              AIが抽出した課題です。内容を確認・修正してから提出してください。提出後も編集できます。
+            <div className="bg-brand-navy-900/40 border border-brand-navy-700 rounded-xl p-3 text-xs text-slate-300 space-y-2">
+              <p>AIが抽出した課題です。内容を確認・修正してから提出してください。提出後も編集できます。</p>
+              <p>課題の解像度を上げるためにマイページの非公開情報も参考にしています。公開させたくない情報については適宜削除や言い換えていただければ幸いです。</p>
             </div>
             <IssueCardsEditor issues={issues} setIssues={setIssues} />
             <div className="flex justify-between">

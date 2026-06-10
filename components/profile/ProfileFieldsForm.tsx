@@ -2,7 +2,7 @@
 import { Dispatch, SetStateAction } from 'react'
 import { INDUSTRIES } from '@/lib/industries'
 import { JOB_TITLES } from '@/lib/jobTitles'
-import { REVENUE_RANGES, FISCAL_MONTHS, MARKETING_CHANNELS, OPERATING_MARGINS, REVENUE_GROWTH_RATES } from '@/lib/profileOptions'
+import { REVENUE_RANGES, FISCAL_MONTHS, MARKETING_CHANNELS, OPERATING_MARGINS, REVENUE_GROWTH_RATES, SERVICE_UNIT_PRICES, CUSTOMER_COUNTS } from '@/lib/profileOptions'
 import { isPublicField } from '@/lib/publicFields'
 
 export interface BreakdownItem { name: string; percentage: number | '' }
@@ -19,8 +19,8 @@ export interface ProfileFormState {
   targetRevenueScale: string
   marketingChannels: string[]
   foundingYear: string | number
-  fullTimeEmployees: string
-  branchCount: string
+  fullTimeEmployees: string | number
+  branchCount: string | number
   operatingMargin: string
   serviceUnitPrice: string
   serviceBreakdown: BreakdownItem[]
@@ -49,6 +49,12 @@ export const SNS_FIELDS = [
 export function profileToForm(me: Record<string, unknown>): ProfileFormState {
   const s = (v: unknown) => (v ?? '') as string
   const n = (v: unknown) => (v ?? '') as string | number
+  // 旧フリーテキスト（"30名"等）を数値に正規化。数値化できなければ空に
+  const numOnly = (v: unknown): string | number => {
+    if (v === null || v === undefined || v === '') return ''
+    const num = Number(v)
+    return Number.isFinite(num) ? num : ''
+  }
   return {
     fullName: s(me.fullName),
     company: s(me.company),
@@ -61,8 +67,8 @@ export function profileToForm(me: Record<string, unknown>): ProfileFormState {
     targetRevenueScale: s(me.targetRevenueScale),
     marketingChannels: Array.isArray(me.marketingChannels) ? (me.marketingChannels as string[]) : [],
     foundingYear: n(me.foundingYear),
-    fullTimeEmployees: s(me.fullTimeEmployees),
-    branchCount: s(me.branchCount),
+    fullTimeEmployees: numOnly(me.fullTimeEmployees),
+    branchCount: numOnly(me.branchCount),
     operatingMargin: s(me.operatingMargin),
     serviceUnitPrice: s(me.serviceUnitPrice),
     serviceBreakdown: Array.isArray(me.serviceBreakdown)
@@ -92,7 +98,7 @@ export function FieldLabel({ children, field }: { children: React.ReactNode; fie
   const isPublic = isPublicField(field)
   return (
     <div className="flex items-center gap-2 mb-1">
-      <label className="text-slate-400 text-sm">{children}</label>
+      <label className="text-slate-400 text-sm">{children}<span className="text-red-400 ml-0.5">*</span></label>
       <span className={`text-[10px] px-1.5 py-0.5 rounded-full border font-medium ${
         isPublic
           ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
@@ -107,9 +113,10 @@ export function FieldLabel({ children, field }: { children: React.ReactNode; fie
 interface Props {
   form: ProfileFormState
   setForm: Dispatch<SetStateAction<ProfileFormState>>
+  hideBioSns?: boolean
 }
 
-export function ProfileFieldsForm({ form, setForm }: Props) {
+export function ProfileFieldsForm({ form, setForm, hideBioSns = false }: Props) {
   const toggleChannel = (c: string) => {
     setForm(p => ({
       ...p,
@@ -173,14 +180,16 @@ export function ProfileFieldsForm({ form, setForm }: Props) {
         </div>
         <div>
           <FieldLabel field="fullTimeEmployees">正社員数</FieldLabel>
-          <input value={form.fullTimeEmployees} onChange={e => setForm(p => ({ ...p, fullTimeEmployees: e.target.value }))}
-            placeholder="例: 30名 / 約20名"
+          <input type="number" min="0" value={form.fullTimeEmployees}
+            onChange={e => setForm(p => ({ ...p, fullTimeEmployees: e.target.value === '' ? '' : Number(e.target.value) }))}
+            placeholder="例: 30"
             className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-brand-sky" />
         </div>
         <div>
           <FieldLabel field="branchCount">拠点数</FieldLabel>
-          <input value={form.branchCount} onChange={e => setForm(p => ({ ...p, branchCount: e.target.value }))}
-            placeholder="例: 3拠点 / 全国15拠点"
+          <input type="number" min="0" value={form.branchCount}
+            onChange={e => setForm(p => ({ ...p, branchCount: e.target.value === '' ? '' : Number(e.target.value) }))}
+            placeholder="例: 3"
             className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-brand-sky" />
         </div>
         <div>
@@ -217,15 +226,19 @@ export function ProfileFieldsForm({ form, setForm }: Props) {
         </div>
         <div>
           <FieldLabel field="serviceUnitPrice">サービス平均単価</FieldLabel>
-          <input value={form.serviceUnitPrice} onChange={e => setForm(p => ({ ...p, serviceUnitPrice: e.target.value }))}
-            placeholder="例: 月額10万円 / 単発100万円"
-            className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-brand-sky" />
+          <select value={form.serviceUnitPrice} onChange={e => setForm(p => ({ ...p, serviceUnitPrice: e.target.value }))}
+            className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-sky">
+            <option value="">選択してください</option>
+            {SERVICE_UNIT_PRICES.map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
         </div>
         <div>
           <FieldLabel field="customerCount">顧客数</FieldLabel>
-          <input value={form.customerCount} onChange={e => setForm(p => ({ ...p, customerCount: e.target.value }))}
-            placeholder="例: 100社 / 月間1万人"
-            className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-brand-sky" />
+          <select value={form.customerCount} onChange={e => setForm(p => ({ ...p, customerCount: e.target.value }))}
+            className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-sky">
+            <option value="">選択してください</option>
+            {CUSTOMER_COUNTS.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
         </div>
         <div>
           <FieldLabel field="revenueGrowth">3年前からの売上成長率</FieldLabel>
@@ -303,28 +316,32 @@ export function ProfileFieldsForm({ form, setForm }: Props) {
         </div>
       </div>
 
-      <div>
-        <FieldLabel field="bio">自己紹介(経歴や事業内容)</FieldLabel>
-        <textarea value={form.bio} onChange={e => setForm(p => ({ ...p, bio: e.target.value }))}
-          rows={5} placeholder="経歴や現在の事業内容などを自由にご記入ください"
-          className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-brand-sky resize-none" />
-      </div>
-      <div>
-        <FieldLabel field="snsLinks">SNSリンク</FieldLabel>
-        <div className="space-y-2">
-          {SNS_FIELDS.map(field => (
-            <div key={field.key} className="flex items-center gap-2">
-              <span className="text-slate-400 text-sm w-28 shrink-0">{field.label}</span>
-              <input
-                value={form.snsLinks[field.key] ?? ''}
-                onChange={e => setForm(p => ({ ...p, snsLinks: { ...p.snsLinks, [field.key]: e.target.value } }))}
-                placeholder={field.placeholder}
-                className="flex-1 bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-1.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-sky"
-              />
+      {!hideBioSns && (
+        <>
+          <div>
+            <FieldLabel field="bio">自己紹介(経歴や事業内容)</FieldLabel>
+            <textarea value={form.bio} onChange={e => setForm(p => ({ ...p, bio: e.target.value }))}
+              rows={5} placeholder="経歴や現在の事業内容などを自由にご記入ください"
+              className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-brand-sky resize-none" />
+          </div>
+          <div>
+            <FieldLabel field="snsLinks">SNSリンク</FieldLabel>
+            <div className="space-y-2">
+              {SNS_FIELDS.map(field => (
+                <div key={field.key} className="flex items-center gap-2">
+                  <span className="text-slate-400 text-sm w-28 shrink-0">{field.label}</span>
+                  <input
+                    value={form.snsLinks[field.key] ?? ''}
+                    onChange={e => setForm(p => ({ ...p, snsLinks: { ...p.snsLinks, [field.key]: e.target.value } }))}
+                    placeholder={field.placeholder}
+                    className="flex-1 bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-1.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-sky"
+                  />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

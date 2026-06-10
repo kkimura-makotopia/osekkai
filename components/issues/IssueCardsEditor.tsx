@@ -17,7 +17,7 @@ interface Props {
   max?: number
 }
 
-export function IssueCardsEditor({ issues, setIssues, max = 5 }: Props) {
+export function IssueCardsEditor({ issues, setIssues, max = 3 }: Props) {
   const update = (i: number, patch: Partial<EditableIssue>) =>
     setIssues(prev => prev.map((it, idx) => (idx === i ? { ...it, ...patch } : it)))
   const remove = (i: number) => setIssues(prev => prev.filter((_, idx) => idx !== i))
@@ -60,7 +60,7 @@ export function IssueCardsEditor({ issues, setIssues, max = 5 }: Props) {
           <div>
             <label className="text-slate-400 text-xs mb-1 block">課題詳細</label>
             <textarea value={issue.detail} onChange={e => update(i, { detail: e.target.value })}
-              rows={5} placeholder="なぜ本質的か、放置した場合のリスク、インパクトなど"
+              rows={9} placeholder="なぜ本質的か、放置した場合のリスク、インパクトなど"
               className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-sky resize-none" />
           </div>
         </div>

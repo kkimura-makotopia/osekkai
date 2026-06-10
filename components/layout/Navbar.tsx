@@ -13,7 +13,7 @@ const guestLinks = [
 const memberLinks = [
   { href: '/events', label: '交流会' },
   { href: '/feedbacks', label: 'おせっかい一覧' },
-  { href: '/issues', label: '経営課題' },
+  { href: '/issues', label: '経営課題提出フォーム' },
 ]
 
 const adminLinks = [
