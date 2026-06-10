@@ -13,6 +13,7 @@ const guestLinks = [
 const memberLinks = [
   { href: '/events', label: '交流会' },
   { href: '/feedbacks', label: 'おせっかい一覧' },
+  { href: '/issues', label: '経営課題' },
 ]
 
 const adminLinks = [
@@ -20,6 +21,7 @@ const adminLinks = [
   { href: '/admin/members', label: '会員管理' },
   { href: '/admin/events', label: 'イベント管理' },
   { href: '/feedbacks', label: 'おせっかい一覧' },
+  { href: '/admin/issues', label: '経営課題' },
 ]
 
 const ROLE_LABELS: Record<string, { label: string; className: string }> = {

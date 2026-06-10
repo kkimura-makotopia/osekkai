@@ -45,6 +45,7 @@ model User {
   referralLinks     ReferralLink[]
   invitedEvents     EventInvitee[]
   feedbackComments  FeedbackComment[]
+  issueSubmissions  IssueSubmission[]
 
   @@map("users")
 }
@@ -75,6 +76,7 @@ model CommunityEvent {
 
   feedbacks Feedback[]
   invitees  EventInvitee[]
+  issueSubmissions IssueSubmission[]
 
   @@map("community_events")
 }
@@ -131,6 +133,49 @@ enum FeedbackType {
   other
 
   @@map("feedback_type")
+}
+
+// ─── 経営課題の提出（1ユーザー×1イベントで1提出、編集で上書き） ──
+model IssueSubmission {
+  id         String          @id @default(cuid())
+  userId     String
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId    String
+  event      CommunityEvent  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  mode       IssueMode       // text | qa
+  sourceText String?         // ①テキスト形式の元入力
+  qaAnswers  Json?           // ②質疑応答形式の回答 [{q,a}]
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  issues     ManagementIssue[]
+
+  @@unique([userId, eventId])
+  @@index([userId])
+  @@index([eventId])
+  @@map("issue_submissions")
+}
+
+// ─── 個々の経営課題（1提出につき2〜3件） ──────────────────────
+model ManagementIssue {
+  id           String          @id @default(cuid())
+  submissionId String
+  submission   IssueSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  category     String          // 課題カテゴリ
+  hotTopic     String?         // ホットトピック
+  summary      String          // 課題概要
+  detail       String?         // 課題詳細
+  orderIndex   Int             @default(0)
+
+  @@index([submissionId])
+  @@map("management_issues")
+}
+
+enum IssueMode {
+  text
+  qa
+
+  @@map("issue_mode")
 }
 
 // ─── 紹介リンク ─────────────────────────────────────────────
