@@ -180,6 +180,7 @@ function NewIssueWizard() {
     return <div className="flex items-center justify-center min-h-screen"><div className="animate-spin w-8 h-8 border-2 border-brand-sky border-t-transparent rounded-full" /></div>
 
   const answeredCount = qaAnswers.filter(a => a.trim()).length
+  const selectedEvent = events.find(e => e.id === eventId)
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
@@ -374,36 +375,64 @@ function NewIssueWizard() {
           </div>
         )}
 
-        {/* STEP 4: 提出する最新版を確認（A4プレビュー） */}
+        {/* STEP 4: 提出する最新版を確認（提出シート プレビュー） */}
         {step === 4 && (
           <div className="space-y-4">
             <div className="bg-brand-navy-900/40 border border-brand-navy-700 rounded-xl p-3 text-xs text-slate-300">
               この内容で運営に提出します。最終的にA4一枚にまとめられます。問題がなければ「運営に提出する」を押してください。
             </div>
 
-            {/* A4イメージのプレビュー */}
-            <div className="bg-white text-brand-navy rounded-xl p-6 space-y-4 shadow-inner">
-              <div>
-                <p className="text-[11px] text-slate-500 mb-1 font-bold">会社情報</p>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                  <div><span className="text-slate-500">会社名：</span>{form.company || '—'}</div>
-                  <div><span className="text-slate-500">業界：</span>{form.industry || '—'}</div>
-                  <div><span className="text-slate-500">従業員数：</span>{form.employeeCount !== '' ? `${form.employeeCount}名` : '—'}</div>
-                  <div><span className="text-slate-500">設立年：</span>{form.foundingYear !== '' ? `${form.foundingYear}年` : '—'}</div>
-                  <div className="col-span-2"><span className="text-slate-500">直近の確定している期の売上：</span>{form.recentRevenue || '—'}</div>
+            {/* 提出シート プレビュー */}
+            <div className="rounded-2xl border border-brand-navy-700 overflow-hidden">
+              {/* シートヘッダー */}
+              <div className="bg-gradient-to-r from-brand-navy-900 to-brand-navy-800 px-5 py-4 border-b border-brand-navy-700">
+                <p className="text-[11px] text-brand-sky-400 font-bold tracking-wider mb-0.5">経営課題 提出シート</p>
+                <p className="text-white font-bold">{form.company || form.fullName || '—'}</p>
+                {selectedEvent && (
+                  <p className="text-slate-400 text-xs mt-0.5">
+                    {selectedEvent.title}（{new Date(selectedEvent.heldAt).toLocaleDateString('ja-JP')}）
+                  </p>
+                )}
+              </div>
+
+              {/* 会社情報 */}
+              <div className="bg-brand-navy-900/40 px-5 py-4">
+                <p className="text-brand-sky-400 text-xs font-bold mb-3 flex items-center gap-1.5">
+                  <span className="w-1 h-3.5 bg-brand-sky rounded-full inline-block" />会社情報
+                </p>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                  {[
+                    ['会社名', form.company || '—'],
+                    ['業界', form.industry || '—'],
+                    ['従業員数', form.employeeCount !== '' ? `${form.employeeCount}名` : '—'],
+                    ['設立年', form.foundingYear !== '' ? `${form.foundingYear}年` : '—'],
+                    ['直近の確定している期の売上', form.recentRevenue || '—'],
+                  ].map(([label, value], i) => (
+                    <div key={i} className={i === 4 ? 'col-span-2' : ''}>
+                      <p className="text-slate-500 text-[11px] mb-0.5">{label}</p>
+                      <p className="text-white text-sm font-medium">{value}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <div className="border-t border-slate-200 pt-3">
-                <p className="text-[11px] text-slate-500 mb-2 font-bold">経営課題（{issues.length}件）</p>
+
+              {/* 経営課題 */}
+              <div className="bg-brand-navy-800 px-5 py-4 border-t border-brand-navy-700">
+                <p className="text-brand-sky-400 text-xs font-bold mb-3 flex items-center gap-1.5">
+                  <span className="w-1 h-3.5 bg-brand-sky rounded-full inline-block" />経営課題
+                  <span className="text-slate-500 font-normal">（{issues.length}件）</span>
+                </p>
                 <div className="space-y-3">
                   {issues.map((it, i) => (
-                    <div key={i}>
-                      <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-navy text-white">{it.category}</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500 text-white">{it.requestType}</span>
+                    <div key={i} className="relative bg-brand-navy-900/50 border border-brand-navy-700 rounded-xl p-4 pl-5">
+                      <span className="absolute left-0 top-3 bottom-3 w-1 bg-brand-sky rounded-full" />
+                      <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-sky/15 text-brand-sky-400 border border-brand-sky/30">{it.category}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">{it.requestType}</span>
+                        <span className="ml-auto text-slate-500 text-[11px]">課題 {i + 1}</span>
                       </div>
-                      <p className="text-sm font-bold">{it.summary}</p>
-                      {it.detail && <p className="text-xs text-slate-600 whitespace-pre-wrap mt-0.5">{it.detail}</p>}
+                      <p className="text-white text-sm font-bold leading-relaxed">{it.summary}</p>
+                      {it.detail && <p className="text-slate-400 text-xs whitespace-pre-wrap mt-1.5 leading-relaxed">{it.detail}</p>}
                     </div>
                   ))}
                 </div>
