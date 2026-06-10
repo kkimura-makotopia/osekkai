@@ -4,17 +4,21 @@ import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { IssueCardsEditor, EditableIssue } from '@/components/issues/IssueCardsEditor'
+import { SubmissionPreview } from '@/components/issues/SubmissionPreview'
 import { QA_QUESTIONS, MODE_LABELS } from '@/lib/issueOptions'
 
 interface QaItem { q: string; a: string }
 interface Submission {
   id: string
   userId: string
-  mode: 'text' | 'qa'
+  mode: 'text' | 'qa' | 'manual'
   sourceText: string | null
   qaAnswers: QaItem[] | null
   updatedAt: string
-  user: { id: string; fullName: string | null; name: string | null; company: string | null }
+  user: {
+    id: string; fullName: string | null; name: string | null; company: string | null
+    industry: string | null; employeeCount: number | null; foundingYear: number | null; recentRevenue: string | null
+  }
   event: { id: string; title: string; heldAt: string }
   issues: { id: string; category: string; requestType: string | null; summary: string; detail: string | null }[]
 }
@@ -27,6 +31,7 @@ export default function IssueDetailPage() {
 
   const [submission, setSubmission] = useState<Submission | null>(null)
   const [issues, setIssues] = useState<EditableIssue[]>([])
+  const [view, setView] = useState<'edit' | 'preview'>('edit')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -47,9 +52,16 @@ export default function IssueDetailPage() {
     })
   }, [status, id, router])
 
-  const save = async () => {
+  const goPreview = () => {
     setError(''); setSavedMsg('')
-    if (issues.some(i => !i.summary.trim())) { setError('各課題の「課題概要」を入力してください'); return }
+    if (issues.length === 0 || issues.some(i => !i.summary.trim())) {
+      setError('各相談の「見出し」を入力してください'); return
+    }
+    setView('preview')
+  }
+
+  const submit = async () => {
+    setError(''); setSavedMsg('')
     setSaving(true)
     const res = await fetch(`/api/issues/${id}`, {
       method: 'PATCH',
@@ -57,8 +69,8 @@ export default function IssueDetailPage() {
       body: JSON.stringify({ issues }),
     })
     setSaving(false)
-    if (res.ok) setSavedMsg('保存しました')
-    else { const d = await res.json().catch(() => ({})); setError(d.error ?? '保存に失敗しました') }
+    if (res.ok) { setSavedMsg('運営に提出しました（内容を更新しました）'); setView('edit') }
+    else { const d = await res.json().catch(() => ({})); setError(d.error ?? '提出に失敗しました') }
   }
 
   const remove = async () => {
@@ -97,41 +109,69 @@ export default function IssueDetailPage() {
       {error && <div className="bg-red-500/10 border border-red-500/30 text-red-300 text-sm rounded-xl px-4 py-3 mb-4">{error}</div>}
       {savedMsg && <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-sm rounded-xl px-4 py-3 mb-4">{savedMsg}</div>}
 
-      {/* 元入力（読み取り専用） */}
-      {submission.mode === 'text' && submission.sourceText && (
-        <details className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-4 mb-4">
-          <summary className="text-slate-300 text-sm cursor-pointer">入力したテキストを表示</summary>
-          <p className="text-slate-400 text-sm whitespace-pre-wrap mt-3">{submission.sourceText}</p>
-        </details>
-      )}
-      {submission.mode === 'qa' && Array.isArray(submission.qaAnswers) && (
-        <details className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-4 mb-4">
-          <summary className="text-slate-300 text-sm cursor-pointer">質疑応答の回答を表示</summary>
-          <div className="space-y-3 mt-3">
-            {submission.qaAnswers.map((qa, i) => (
-              <div key={i}>
-                <p className="text-slate-300 text-sm"><span className="text-brand-sky-400 font-bold mr-1">Q{i + 1}.</span>{qa.q || QA_QUESTIONS[i]}</p>
-                <p className="text-slate-400 text-sm whitespace-pre-wrap pl-5">{qa.a || '（未回答）'}</p>
+      {view === 'edit' ? (
+        <>
+          {/* 元入力（読み取り専用） */}
+          {submission.mode === 'text' && submission.sourceText && (
+            <details className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-4 mb-4">
+              <summary className="text-slate-300 text-sm cursor-pointer">入力したテキストを表示</summary>
+              <p className="text-slate-400 text-sm whitespace-pre-wrap mt-3">{submission.sourceText}</p>
+            </details>
+          )}
+          {submission.mode === 'qa' && Array.isArray(submission.qaAnswers) && (
+            <details className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-4 mb-4">
+              <summary className="text-slate-300 text-sm cursor-pointer">質疑応答の回答を表示</summary>
+              <div className="space-y-3 mt-3">
+                {submission.qaAnswers.map((qa, i) => (
+                  <div key={i}>
+                    <p className="text-slate-300 text-sm"><span className="text-brand-sky-400 font-bold mr-1">Q{i + 1}.</span>{qa.q || QA_QUESTIONS[i]}</p>
+                    <p className="text-slate-400 text-sm whitespace-pre-wrap pl-5">{qa.a || '（未回答）'}</p>
+                  </div>
+                ))}
               </div>
-            ))}
+            </details>
+          )}
+
+          <h2 className="text-white font-medium mb-3">経営課題</h2>
+          <IssueCardsEditor issues={issues} setIssues={setIssues} />
+
+          <div className="flex justify-between items-center mt-6">
+            {(isOwner || isAdmin) ? (
+              <button onClick={remove} disabled={deleting} className="text-red-400 hover:text-red-300 text-sm disabled:opacity-60">
+                {deleting ? '削除中...' : 'この提出を削除'}
+              </button>
+            ) : <span />}
+            <button onClick={goPreview}
+              className="bg-brand-sky hover:bg-brand-sky-400 text-white px-6 py-2 rounded-xl text-sm font-medium">
+              次へ（最終確認）
+            </button>
           </div>
-        </details>
+        </>
+      ) : (
+        <>
+          <div className="bg-brand-navy-900/40 border border-brand-navy-700 rounded-xl p-3 text-xs text-slate-300 mb-4">
+            この内容で運営に提出します（既存の内容を更新します）。問題がなければ「運営へ提出する」を押してください。
+          </div>
+          <SubmissionPreview
+            company={submission.user.company}
+            fullName={authorName}
+            industry={submission.user.industry}
+            employeeCount={submission.user.employeeCount}
+            foundingYear={submission.user.foundingYear}
+            recentRevenue={submission.user.recentRevenue}
+            eventTitle={submission.event.title}
+            eventDate={submission.event.heldAt}
+            issues={issues}
+          />
+          <div className="flex justify-between items-center mt-6">
+            <button onClick={() => setView('edit')} className="text-slate-300 hover:text-white px-4 py-2 text-sm">編集に戻る</button>
+            <button onClick={submit} disabled={saving}
+              className="bg-brand-sky hover:bg-brand-sky-400 text-white px-6 py-2 rounded-xl text-sm font-medium disabled:opacity-60">
+              {saving ? '提出中...' : '運営へ提出する'}
+            </button>
+          </div>
+        </>
       )}
-
-      <h2 className="text-white font-medium mb-3">経営課題</h2>
-      <IssueCardsEditor issues={issues} setIssues={setIssues} />
-
-      <div className="flex justify-between items-center mt-6">
-        {(isOwner || isAdmin) ? (
-          <button onClick={remove} disabled={deleting} className="text-red-400 hover:text-red-300 text-sm disabled:opacity-60">
-            {deleting ? '削除中...' : 'この提出を削除'}
-          </button>
-        ) : <span />}
-        <button onClick={save} disabled={saving}
-          className="bg-brand-sky hover:bg-brand-sky-400 text-white px-6 py-2 rounded-xl text-sm font-medium disabled:opacity-60">
-          {saving ? '保存中...' : '変更を保存'}
-        </button>
-      </div>
     </div>
   )
 }

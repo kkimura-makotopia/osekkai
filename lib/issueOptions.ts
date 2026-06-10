@@ -48,7 +48,8 @@ export const QA_QUESTIONS = [
   '今の組織の最大の弱みは？',
 ] as const
 
-export const MODE_LABELS: Record<'text' | 'qa', string> = {
+export const MODE_LABELS: Record<'text' | 'qa' | 'manual', string> = {
   text: 'テキスト形式',
   qa: '質疑応答形式',
+  manual: '自分で作成する',
 }

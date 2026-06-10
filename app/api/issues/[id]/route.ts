@@ -3,7 +3,10 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-const userSelect = { id: true, fullName: true, name: true, company: true, image: true, role: true }
+const userSelect = {
+  id: true, fullName: true, name: true, company: true, image: true, role: true,
+  industry: true, employeeCount: true, foundingYear: true, recentRevenue: true,
+}
 const eventSelect = { id: true, title: true, heldAt: true }
 
 function sanitizeIssues(raw: unknown) {
