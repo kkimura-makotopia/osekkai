@@ -15,7 +15,14 @@ import { QA_QUESTIONS, MODE_LABELS } from '@/lib/issueOptions'
 interface EventLite { id: string; title: string; heldAt: string }
 type Mode = 'text' | 'qa'
 
-const STEPS = ['イベント・形式', 'プロフィール', '入力・AI解析', '確認・提出']
+const STEPS = ['イベント・形式', 'プロフィール', '入力・AI解析', '内容の確認・編集', '提出する最新版を確認']
+
+const HINTS = [
+  'AIレコメンドはあくまで参考程度にして、言い回しなどは是非変更してください。',
+  '発表時間は8分なので、濃い課題を2件に絞るのがおすすめです。',
+  '聞きたいペルソナを年商規模などで絞りすぎると、おせっかいが出にくくなる可能性が高いです。',
+  '抽象的だと深掘りで時間が終わってしまいます。「代理店の管理工数が大きくなってきているので代理店管理のTipsを知りたい」くらいの具体的な課題も織り交ぜると、おせっかいをもらいやすいです。',
+]
 
 function NewIssueWizard() {
   const { data: session, status } = useSession()
@@ -40,6 +47,22 @@ function NewIssueWizard() {
   const [loading, setLoading] = useState(true)
   const [submittedEventIds, setSubmittedEventIds] = useState<Set<string>>(new Set())
   const [qaIndex, setQaIndex] = useState(0)
+  const [analyzeProgress, setAnalyzeProgress] = useState(0)
+  const [hintOpen, setHintOpen] = useState(true)
+
+  // AI解析中の進捗バー（疑似進捗。応答受信で100%）
+  useEffect(() => {
+    if (!analyzing) return
+    setAnalyzeProgress(8)
+    const id = setInterval(() => {
+      setAnalyzeProgress(p => {
+        if (p >= 92) return p
+        const inc = p < 50 ? 6 : p < 80 ? 2 : 1
+        return Math.min(92, p + inc)
+      })
+    }, 400)
+    return () => clearInterval(id)
+  }, [analyzing])
 
   useEffect(() => {
     if (status === 'unauthenticated') { router.push('/login'); return }
@@ -103,6 +126,7 @@ function NewIssueWizard() {
       setError(data.error ?? 'AI解析に失敗しました')
       return
     }
+    setAnalyzeProgress(100)
     const data = await res.json()
     const got: EditableIssue[] = (data.issues ?? []).map((i: EditableIssue) => ({
       category: i.category ?? 'その他',
@@ -111,7 +135,17 @@ function NewIssueWizard() {
       detail: i.detail ?? '',
     }))
     setIssues(got.length ? got : [{ category: 'その他', requestType: 'ヒアリング', summary: '', detail: '' }])
+    setHintOpen(true)
     setStep(3)
+  }
+
+  const goPreview = () => {
+    setError('')
+    if (issues.length === 0 || issues.some(i => !i.summary.trim())) {
+      setError('各相談の「見出し」を入力してください')
+      return
+    }
+    setStep(4)
   }
 
   const submit = async () => {
@@ -246,7 +280,16 @@ function NewIssueWizard() {
           <div className="space-y-4">
             <p className="text-slate-300 text-sm">入力形式: <span className="text-brand-sky-400">{MODE_LABELS[mode]}</span></p>
 
-            {mode === 'text' ? (
+            {analyzing ? (
+              /* AI解析中の進捗バー */
+              <div className="py-12 text-center space-y-4">
+                <p className="text-white text-sm">AIが経営課題を抽出しています…</p>
+                <div className="h-2 bg-brand-navy-700 rounded-full overflow-hidden max-w-md mx-auto">
+                  <div className="h-full bg-brand-sky transition-all duration-300 ease-out" style={{ width: `${analyzeProgress}%` }} />
+                </div>
+                <p className="text-slate-500 text-xs">{analyzeProgress}%</p>
+              </div>
+            ) : mode === 'text' ? (
               <>
                 <div>
                   <label className="text-white font-medium mb-2 block">現在の事業の状況・お悩み</label>
@@ -256,10 +299,9 @@ function NewIssueWizard() {
                 </div>
                 <div className="flex justify-between items-center">
                   <button onClick={() => setStep(1)} className="text-slate-300 hover:text-white px-4 py-2 text-sm">戻る</button>
-                  <button onClick={runAnalyze} disabled={analyzing || !sourceText.trim()}
-                    className="bg-brand-sky hover:bg-brand-sky-400 text-white px-6 py-2 rounded-xl text-sm font-medium disabled:opacity-50 flex items-center gap-2">
-                    {analyzing && <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />}
-                    {analyzing ? 'AIが解析中...' : 'AIで課題を抽出する'}
+                  <button onClick={runAnalyze} disabled={!sourceText.trim()}
+                    className="bg-brand-sky hover:bg-brand-sky-400 text-white px-6 py-2 rounded-xl text-sm font-medium disabled:opacity-50">
+                    AIで課題を抽出する
                   </button>
                 </div>
               </>
@@ -283,7 +325,7 @@ function NewIssueWizard() {
                     key={qaIndex}
                     value={qaAnswers[qaIndex]}
                     onChange={e => setQaAnswers(prev => prev.map((a, idx) => idx === qaIndex ? e.target.value : a))}
-                    rows={4} autoFocus placeholder="回答を入力してください（任意・スキップ可）"
+                    rows={4} autoFocus placeholder="回答を入力してください（すべての質問に回答が必要です）"
                     className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-sky resize-none" />
                 </div>
 
@@ -295,24 +337,26 @@ function NewIssueWizard() {
                     {qaIndex === 0 ? '戻る' : '← 前の質問'}
                   </button>
                   {qaIndex < QA_QUESTIONS.length - 1 ? (
-                    <button onClick={() => setQaIndex(i => i + 1)}
-                      className="bg-brand-navy-700 hover:bg-brand-navy-900 text-white px-6 py-2 rounded-xl text-sm font-medium">
+                    <button onClick={() => setQaIndex(i => i + 1)} disabled={!qaAnswers[qaIndex]?.trim()}
+                      className="bg-brand-navy-700 hover:bg-brand-navy-900 text-white px-6 py-2 rounded-xl text-sm font-medium disabled:opacity-40">
                       次の質問 →
                     </button>
                   ) : (
-                    <button onClick={runAnalyze} disabled={analyzing || answeredCount === 0}
-                      className="bg-brand-sky hover:bg-brand-sky-400 text-white px-6 py-2 rounded-xl text-sm font-medium disabled:opacity-50 flex items-center gap-2">
-                      {analyzing && <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />}
-                      {analyzing ? 'AIが解析中...' : 'AIで課題を抽出する'}
+                    <button onClick={runAnalyze} disabled={!qaAnswers[qaIndex]?.trim()}
+                      className="bg-brand-sky hover:bg-brand-sky-400 text-white px-6 py-2 rounded-xl text-sm font-medium disabled:opacity-50">
+                      AIで課題を抽出する
                     </button>
                   )}
                 </div>
+                {!qaAnswers[qaIndex]?.trim() && (
+                  <p className="text-slate-500 text-xs text-right">この質問に回答すると次へ進めます（スキップ不可）</p>
+                )}
               </div>
             )}
           </div>
         )}
 
-        {/* STEP 3: 確認・提出 */}
+        {/* STEP 3: 内容の確認・編集 */}
         {step === 3 && (
           <div className="space-y-4">
             <div className="bg-brand-navy-900/40 border border-brand-navy-700 rounded-xl p-3 text-xs text-slate-300 space-y-2">
@@ -322,6 +366,52 @@ function NewIssueWizard() {
             <IssueCardsEditor issues={issues} setIssues={setIssues} />
             <div className="flex justify-between">
               <button onClick={() => setStep(2)} className="text-slate-300 hover:text-white px-4 py-2 text-sm">入力に戻る</button>
+              <button onClick={goPreview}
+                className="bg-brand-sky hover:bg-brand-sky-400 text-white px-6 py-2 rounded-xl text-sm font-medium">
+                次へ（最終確認）
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 4: 提出する最新版を確認（A4プレビュー） */}
+        {step === 4 && (
+          <div className="space-y-4">
+            <div className="bg-brand-navy-900/40 border border-brand-navy-700 rounded-xl p-3 text-xs text-slate-300">
+              この内容で運営に提出します。最終的にA4一枚にまとめられます。問題がなければ「運営に提出する」を押してください。
+            </div>
+
+            {/* A4イメージのプレビュー */}
+            <div className="bg-white text-brand-navy rounded-xl p-6 space-y-4 shadow-inner">
+              <div>
+                <p className="text-[11px] text-slate-500 mb-1 font-bold">会社情報</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                  <div><span className="text-slate-500">会社名：</span>{form.company || '—'}</div>
+                  <div><span className="text-slate-500">業界：</span>{form.industry || '—'}</div>
+                  <div><span className="text-slate-500">従業員数：</span>{form.employeeCount !== '' ? `${form.employeeCount}名` : '—'}</div>
+                  <div><span className="text-slate-500">設立年：</span>{form.foundingYear !== '' ? `${form.foundingYear}年` : '—'}</div>
+                  <div className="col-span-2"><span className="text-slate-500">直近の確定している期の売上：</span>{form.recentRevenue || '—'}</div>
+                </div>
+              </div>
+              <div className="border-t border-slate-200 pt-3">
+                <p className="text-[11px] text-slate-500 mb-2 font-bold">経営課題（{issues.length}件）</p>
+                <div className="space-y-3">
+                  {issues.map((it, i) => (
+                    <div key={i}>
+                      <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-navy text-white">{it.category}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500 text-white">{it.requestType}</span>
+                      </div>
+                      <p className="text-sm font-bold">{it.summary}</p>
+                      {it.detail && <p className="text-xs text-slate-600 whitespace-pre-wrap mt-0.5">{it.detail}</p>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-between">
+              <button onClick={() => setStep(3)} className="text-slate-300 hover:text-white px-4 py-2 text-sm">編集に戻る</button>
               <button onClick={submit} disabled={submitting}
                 className="bg-brand-sky hover:bg-brand-sky-400 text-white px-6 py-2 rounded-xl text-sm font-medium disabled:opacity-60">
                 {submitting ? '提出中...' : '運営に提出する'}
@@ -330,6 +420,31 @@ function NewIssueWizard() {
           </div>
         )}
       </div>
+
+      {/* おせっかいを獲得するヒント（確認・編集ステップで表示） */}
+      {step === 3 && (
+        hintOpen ? (
+          <div className="fixed right-4 top-20 z-50 w-80 max-w-[calc(100vw-2rem)] bg-brand-navy-800 border border-brand-sky/40 rounded-2xl shadow-2xl p-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-brand-sky-400 font-bold text-sm">💡 おせっかいを獲得するヒント</p>
+              <button onClick={() => setHintOpen(false)} aria-label="閉じる"
+                className="text-slate-400 hover:text-white text-xl leading-none px-1">×</button>
+            </div>
+            <ul className="space-y-2">
+              {HINTS.map((h, i) => (
+                <li key={i} className="text-slate-300 text-xs leading-relaxed flex gap-2">
+                  <span className="text-brand-sky-400 shrink-0">・</span><span>{h}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <button onClick={() => setHintOpen(true)} title="おせっかいを獲得するヒント"
+            className="fixed right-4 top-20 z-50 w-11 h-11 rounded-full bg-brand-sky hover:bg-brand-sky-400 text-white shadow-2xl flex items-center justify-center text-xl">
+            💡
+          </button>
+        )
+      )}
     </div>
   )
 }
