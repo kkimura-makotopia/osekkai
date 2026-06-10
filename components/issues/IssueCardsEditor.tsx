@@ -1,15 +1,15 @@
 'use client'
 import { Dispatch, SetStateAction } from 'react'
-import { ISSUE_CATEGORIES } from '@/lib/issueOptions'
+import { ISSUE_CATEGORIES, REQUEST_TYPES } from '@/lib/issueOptions'
 
 export interface EditableIssue {
   category: string
-  hotTopic: string
+  requestType: string
   summary: string
   detail: string
 }
 
-export const emptyIssue: EditableIssue = { category: 'その他', hotTopic: '', summary: '', detail: '' }
+export const emptyIssue: EditableIssue = { category: 'その他', requestType: 'ヒアリング', summary: '', detail: '' }
 
 interface Props {
   issues: EditableIssue[]
@@ -28,10 +28,10 @@ export function IssueCardsEditor({ issues, setIssues, max = 3 }: Props) {
       {issues.map((issue, i) => (
         <div key={i} className="bg-brand-navy-900/40 border border-brand-navy-700 rounded-xl p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-brand-sky-400 text-sm font-bold">課題 {i + 1}</span>
+            <span className="text-brand-sky-400 text-sm font-bold">相談 {i + 1}</span>
             {issues.length > 1 && (
               <button type="button" onClick={() => remove(i)}
-                className="text-red-400 hover:text-red-300 text-xs">この課題を削除</button>
+                className="text-red-400 hover:text-red-300 text-xs">この相談を削除</button>
             )}
           </div>
 
@@ -44,23 +44,24 @@ export function IssueCardsEditor({ issues, setIssues, max = 3 }: Props) {
               </select>
             </div>
             <div>
-              <label className="text-slate-400 text-xs mb-1 block">ホットトピック</label>
-              <input value={issue.hotTopic} onChange={e => update(i, { hotTopic: e.target.value })}
-                placeholder="課題を一言で"
-                className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-sky" />
+              <label className="text-slate-400 text-xs mb-1 block">種別</label>
+              <select value={issue.requestType} onChange={e => update(i, { requestType: e.target.value })}
+                className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-brand-sky">
+                {REQUEST_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
             </div>
           </div>
 
           <div>
-            <label className="text-slate-400 text-xs mb-1 block">課題概要</label>
+            <label className="text-slate-400 text-xs mb-1 block">見出し（コミュニティで発表する一文・質問/依頼の形）</label>
             <textarea value={issue.summary} onChange={e => update(i, { summary: e.target.value })}
-              rows={2} placeholder="課題の概要を簡潔に"
+              rows={2} placeholder="例: 歩留まり分析などデータドリブンに施策決定する成功事例を知りたい"
               className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-sky resize-none" />
           </div>
           <div>
-            <label className="text-slate-400 text-xs mb-1 block">課題詳細</label>
+            <label className="text-slate-400 text-xs mb-1 block">背景・具体的に聞きたいこと / 紹介してほしいこと</label>
             <textarea value={issue.detail} onChange={e => update(i, { detail: e.target.value })}
-              rows={9} placeholder="なぜ本質的か、放置した場合のリスク、インパクトなど"
+              rows={9} placeholder="現状の数字や取り組み、これまで試したことを書き、具体的に何を聞きたいか・どんな相手を紹介してほしいかを明確に書いてください。"
               className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-sky resize-none" />
           </div>
         </div>
@@ -69,7 +70,7 @@ export function IssueCardsEditor({ issues, setIssues, max = 3 }: Props) {
       {issues.length < max && (
         <button type="button" onClick={add}
           className="w-full bg-brand-navy-700 hover:bg-brand-navy-900 text-white py-2 rounded-xl text-sm">
-          + 課題を追加
+          + 相談を追加
         </button>
       )}
     </div>

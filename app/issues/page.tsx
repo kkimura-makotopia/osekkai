@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { MODE_LABELS } from '@/lib/issueOptions'
 
-interface Issue { id: string; category: string; hotTopic: string | null; summary: string; detail: string | null }
+interface Issue { id: string; category: string; requestType: string | null; summary: string; detail: string | null }
 interface Submission {
   id: string
   mode: 'text' | 'qa'
@@ -68,16 +68,21 @@ export default function IssuesPage() {
                   {MODE_LABELS[sub.mode]}
                 </span>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {sub.issues.map(issue => (
-                  <div key={issue.id} className="flex items-start gap-2">
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-sky/15 text-brand-sky-400 border border-brand-sky/30 shrink-0 mt-0.5">
-                      {issue.category}
-                    </span>
-                    <div className="min-w-0">
-                      {issue.hotTopic && <p className="text-white text-sm font-medium truncate">{issue.hotTopic}</p>}
-                      <p className="text-slate-400 text-xs line-clamp-2">{issue.summary}</p>
+                  <div key={issue.id}>
+                    <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-sky/15 text-brand-sky-400 border border-brand-sky/30">
+                        {issue.category}
+                      </span>
+                      {issue.requestType && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                          {issue.requestType}
+                        </span>
+                      )}
                     </div>
+                    <p className="text-white text-sm font-medium">{issue.summary}</p>
+                    {issue.detail && <p className="text-slate-400 text-xs line-clamp-2 mt-0.5">{issue.detail}</p>}
                   </div>
                 ))}
               </div>

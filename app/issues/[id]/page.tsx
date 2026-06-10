@@ -16,7 +16,7 @@ interface Submission {
   updatedAt: string
   user: { id: string; fullName: string | null; name: string | null; company: string | null }
   event: { id: string; title: string; heldAt: string }
-  issues: { id: string; category: string; hotTopic: string | null; summary: string; detail: string | null }[]
+  issues: { id: string; category: string; requestType: string | null; summary: string; detail: string | null }[]
 }
 
 export default function IssueDetailPage() {
@@ -41,7 +41,7 @@ export default function IssueDetailPage() {
       const data: Submission = await r.json()
       setSubmission(data)
       setIssues(data.issues.map(i => ({
-        category: i.category, hotTopic: i.hotTopic ?? '', summary: i.summary, detail: i.detail ?? '',
+        category: i.category, requestType: i.requestType ?? 'ヒアリング', summary: i.summary, detail: i.detail ?? '',
       })))
       setLoading(false)
     })

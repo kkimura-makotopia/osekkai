@@ -1,12 +1,12 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { ISSUE_CATEGORIES } from '@/lib/issueOptions'
+import { ISSUE_CATEGORIES, REQUEST_TYPES } from '@/lib/issueOptions'
 
 // 使用モデル（変更する場合はこの1行のみ）
 const MODEL = 'claude-sonnet-4-6'
 
 export interface AiIssue {
   category: string
-  hotTopic: string
+  requestType: string
   summary: string
   detail: string
 }
@@ -62,23 +62,37 @@ function buildProfileContext(profile: Record<string, unknown>): string {
   return lines.length ? lines.join('\n') : '（プロフィール情報の入力なし）'
 }
 
-const SYSTEM_PROMPT = `あなたは経験豊富な経営コンサルタントです。経営者が抱える「事業が停滞しているボトルネック（本質的な経営課題）」を発見することがあなたの役割です。
+const SYSTEM_PROMPT = `あなたは経営者コミュニティのファシリテーターで、経営者へのヒアリングの達人です。
 
-提供された経営者のプロフィール情報と、本人による記述（自由記述または質疑応答）をもとに、本質的な経営課題を2〜3件抽出してください。
+このコミュニティでは、経営者が自社の課題を定例会で「発表」し、参加している他の経営者から【具体的なアドバイス・成功事例・Tips】や【人脈・企業・サービスの紹介】を獲得します。
 
-抽出時の評価軸:
-1. 表面的な症状ではなく、その背後にある「本質的な課題（真因）」を捉える
-2. 解決した場合に売上・利益へ与える「インパクトの大きさ」を考慮し、インパクトの大きい課題を優先する
-3. マーケティング・営業・組織・財務など多岐にわたる領域を横断的に検討する
-4. 経営者本人が「言語化できていない可能性のある課題」も、根拠があれば積極的に指摘する
+あなたの役割は、提供された経営者のプロフィールと本人の記述（自由記述または質疑応答）をもとに、本人が事業を前に進めるうえで本質的だと思われるボトルネックを見極め、それを「他の経営者に持っていく相談項目」に変換することです。
 
-各課題は次の要素で構成してください:
-- category: 課題カテゴリ（必ず指定された選択肢から選ぶ）
-- hotTopic: その課題を一言で表す短いキャッチコピー（15文字程度）
-- summary: 課題の概要（1〜2文、80文字程度）
-- detail: 課題の詳細。なぜそれが本質的なのか、放置した場合のリスク、想定されるインパクトを具体的に記述（200〜400文字）
+【最重要】評論・分析・指摘は絶対にしないでください。「〜が課題である」「〜が真因だ」といった解説口調は禁止です。代わりに、本人が他の経営者に投げかける【質問】や、紹介してほしい相手を頼む【お願い】の形にしてください。
 
-必ず日本語で、submit_issues ツールを使って構造化された形で回答してください。`
+各相談項目は次の2種類のいずれかです:
+- ヒアリング: 他の経営者の知見・成功事例・Tips・やり方を教えてもらう相談
+- 依頼: 特定の人・企業・サービスを紹介してもらう、または繋がりたいというお願い
+
+各項目の構成:
+- category: 課題カテゴリ（指定の選択肢から選ぶ）
+- requestType: 「ヒアリング」か「依頼」
+- summary: コミュニティで発表する見出しの一文。必ず質問・依頼の形にする。
+  （良い例:「歩留まり分析などデータドリブンに施策決定することでの成功事例を知りたい」「3名以上の社労士事務所と繋がりが多いアライアンスパートナーを発見したい」「ストック型のビジネスモデルを構築するにあたり既存顧客へのクロスセルはどのように行っていますか？」）
+- detail: 背景の説明（現状の具体的な数字・取り組み・これまで試したことをプロフィール情報も活かして記述）と、「具体的に何を聞きたいか／どんな相手を紹介してほしいか」を明確に書く。1〜3文。
+
+スタイルのルール:
+- 一文目から本人が一人称で語っているような自然な相談文にする（「〜したいです」「〜をお聞きしたいです」「〜と繋がりたいです」など）
+- 抽象論・一般論を避け、本人の実際の状況（数字・チャネル・規模など）に即して具体的にする
+- 解決策をこちらで断定しない。あくまで他の経営者から引き出すための問いかけにする
+
+参考にすべき良い見出しのトーン:
+- 【マーケティング課題】【ヒアリング】歩留まり分析などデータドリブンに施策決定することでの成功事例を知りたい
+- 【経営課題】【ヒアリング】代理店数が増え管理工数が大きくなってきているので代理店管理のTipsを知りたい
+- 【採用課題】【依頼】営業人材を紹介してくれるエージェントを知りたい
+- 【事業課題】【依頼】共催セミナーを実施できる企業を紹介してほしい
+
+必ず日本語で、2〜3件、submit_issues ツールで回答してください。`
 
 function buildUserMessage(p: AnalyzeParams): string {
   const profileBlock = buildProfileContext(p.profile)
@@ -97,7 +111,7 @@ function buildUserMessage(p: AnalyzeParams): string {
 
 const issueTool: Anthropic.Tool = {
   name: 'submit_issues',
-  description: '抽出した経営課題を2〜3件、構造化して返す',
+  description: 'コミュニティで発表する相談項目を2〜3件、構造化して返す',
   input_schema: {
     type: 'object',
     properties: {
@@ -113,11 +127,15 @@ const issueTool: Anthropic.Tool = {
               enum: [...ISSUE_CATEGORIES],
               description: '課題カテゴリ',
             },
-            hotTopic: { type: 'string', description: '課題を一言で表すキャッチコピー' },
-            summary: { type: 'string', description: '課題の概要（1〜2文）' },
-            detail: { type: 'string', description: '課題の詳細（真因・リスク・インパクト）' },
+            requestType: {
+              type: 'string',
+              enum: [...REQUEST_TYPES],
+              description: 'ヒアリング（知見を聞く）か 依頼（紹介してもらう）',
+            },
+            summary: { type: 'string', description: 'コミュニティで発表する見出しの一文（質問・依頼の形）' },
+            detail: { type: 'string', description: '背景と、具体的に聞きたいこと／紹介してほしいこと' },
           },
-          required: ['category', 'hotTopic', 'summary', 'detail'],
+          required: ['category', 'requestType', 'summary', 'detail'],
         },
       },
     },
@@ -152,7 +170,7 @@ export async function analyzeToIssues(p: AnalyzeParams): Promise<AiIssue[]> {
 
   return issues.map(i => ({
     category: String(i.category ?? 'その他'),
-    hotTopic: String(i.hotTopic ?? ''),
+    requestType: String(i.requestType ?? 'ヒアリング'),
     summary: String(i.summary ?? ''),
     detail: String(i.detail ?? ''),
   }))

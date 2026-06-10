@@ -162,9 +162,10 @@ model ManagementIssue {
   submissionId String
   submission   IssueSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
   category     String          // 課題カテゴリ
-  hotTopic     String?         // ホットトピック
-  summary      String          // 課題概要
-  detail       String?         // 課題詳細
+  requestType  String?         // 相談種別（ヒアリング / 依頼）
+  hotTopic     String?         // （旧）ホットトピック ※現UIでは未使用
+  summary      String          // 見出し（質問・依頼の一文）
+  detail       String?         // 背景・具体的に聞きたいこと/紹介してほしいこと
   orderIndex   Int             @default(0)
 
   @@index([submissionId])

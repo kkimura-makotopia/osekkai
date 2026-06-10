@@ -12,7 +12,7 @@ function sanitizeIssues(raw: unknown) {
     .filter(it => it && typeof it === 'object')
     .map((it: Record<string, unknown>, idx: number) => ({
       category: String(it.category ?? '').trim() || 'その他',
-      hotTopic: it.hotTopic ? String(it.hotTopic).trim() : null,
+      requestType: it.requestType ? String(it.requestType).trim() : null,
       summary: String(it.summary ?? '').trim(),
       detail: it.detail ? String(it.detail).trim() : null,
       orderIndex: idx,

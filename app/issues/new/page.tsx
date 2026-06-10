@@ -100,11 +100,11 @@ function NewIssueWizard() {
     const data = await res.json()
     const got: EditableIssue[] = (data.issues ?? []).map((i: EditableIssue) => ({
       category: i.category ?? 'その他',
-      hotTopic: i.hotTopic ?? '',
+      requestType: i.requestType ?? 'ヒアリング',
       summary: i.summary ?? '',
       detail: i.detail ?? '',
     }))
-    setIssues(got.length ? got : [{ category: 'その他', hotTopic: '', summary: '', detail: '' }])
+    setIssues(got.length ? got : [{ category: 'その他', requestType: 'ヒアリング', summary: '', detail: '' }])
     setStep(3)
   }
 
