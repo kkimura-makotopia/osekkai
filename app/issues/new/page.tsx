@@ -11,7 +11,22 @@ import {
 } from '@/components/profile/ProfileFieldsForm'
 import { IssueCardsEditor, EditableIssue, emptyIssue } from '@/components/issues/IssueCardsEditor'
 import { SubmissionPreview } from '@/components/issues/SubmissionPreview'
-import { QA_QUESTIONS, MODE_LABELS } from '@/lib/issueOptions'
+import { QA_QUESTIONS, QA_EXAMPLES, MODE_LABELS } from '@/lib/issueOptions'
+import { PenLine, HelpCircle, ListChecks } from 'lucide-react'
+
+const TEXT_PLACEHOLDER = `例）
+今期の売上達成度は85%着地でした。原因としては大きく分けて３つです。
+①リファラルでのリード獲得に限界があること。
+②商談の歩留まりのうち、クロージング率が異常に低いこと。
+③大型クライアントの解約があったことです。
+
+それぞれの原因について課題を深堀りしてください。`
+
+const MODE_CARDS = [
+  { mode: 'text' as const, icon: PenLine, title: '① テキスト形式', desc: '事業進捗や伸び悩んでいることなど、現在視点で経営課題を洗い出したい方におすすめ' },
+  { mode: 'qa' as const, icon: HelpCircle, title: '② 質疑応答形式', desc: '3年後のあるべき姿から逆算する未来視点で経営課題を洗い出したい方におすすめ' },
+  { mode: 'manual' as const, icon: ListChecks, title: '③ 自分で作成する', desc: '既に経営課題が明瞭で、淡々と入力したい方におすすめ' },
+]
 
 interface EventLite { id: string; title: string; heldAt: string }
 type Mode = 'text' | 'qa' | 'manual'
@@ -243,27 +258,20 @@ function NewIssueWizard() {
             <div>
               <label className="text-white font-medium mb-2 block">入力形式</label>
               <div className="grid sm:grid-cols-3 gap-3">
-                <button type="button" onClick={() => setMode('text')}
-                  className={`text-left p-4 rounded-xl border transition-colors ${
-                    mode === 'text' ? 'border-brand-sky bg-brand-sky/10' : 'border-brand-navy-700 bg-brand-navy-900/40 hover:border-brand-navy-700'
-                  }`}>
-                  <p className="text-white font-medium mb-1">① テキスト形式</p>
-                  <p className="text-slate-400 text-xs">現状を自由に記述すると、AIが課題を抽出します。</p>
-                </button>
-                <button type="button" onClick={() => setMode('qa')}
-                  className={`text-left p-4 rounded-xl border transition-colors ${
-                    mode === 'qa' ? 'border-brand-sky bg-brand-sky/10' : 'border-brand-navy-700 bg-brand-navy-900/40 hover:border-brand-navy-700'
-                  }`}>
-                  <p className="text-white font-medium mb-1">② 質疑応答形式</p>
-                  <p className="text-slate-400 text-xs">質問に1問ずつ答えると、AIが課題を導き出します。</p>
-                </button>
-                <button type="button" onClick={() => setMode('manual')}
-                  className={`text-left p-4 rounded-xl border transition-colors ${
-                    mode === 'manual' ? 'border-brand-sky bg-brand-sky/10' : 'border-brand-navy-700 bg-brand-navy-900/40 hover:border-brand-navy-700'
-                  }`}>
-                  <p className="text-white font-medium mb-1">③ 自分で作成する</p>
-                  <p className="text-slate-400 text-xs">AIを使わず、空のフォームに自分で課題を入力します。</p>
-                </button>
+                {MODE_CARDS.map(({ mode: m, icon: Icon, title, desc }) => (
+                  <button key={m} type="button" onClick={() => setMode(m)}
+                    className={`text-left p-4 rounded-xl border transition-colors ${
+                      mode === m ? 'border-brand-sky bg-brand-sky/10' : 'border-brand-navy-700 bg-brand-navy-900/40 hover:border-brand-sky/40'
+                    }`}>
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-2 ${
+                      mode === m ? 'bg-brand-sky text-white' : 'bg-brand-navy-700 text-brand-sky-400'
+                    }`}>
+                      <Icon size={18} />
+                    </div>
+                    <p className="text-white font-medium mb-1 text-sm">{title}</p>
+                    <p className="text-slate-400 text-xs leading-relaxed">{desc}</p>
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -280,7 +288,7 @@ function NewIssueWizard() {
         {step === 1 && (
           <div className="space-y-4">
             <div className="bg-brand-navy-900/40 border border-brand-navy-700 rounded-xl p-3 text-xs text-slate-300">
-              マイページの情報を補完しています。新しく入力・修正した内容は<strong className="text-brand-sky-400"> マイページにも反映 </strong>されます。AI解析の精度向上に使われます。
+              マイページの入力情報と同じ項目です。新しく入力・修正した内容は<strong className="text-brand-sky-400"> マイページにも反映 </strong>されます。経営課題解析の精度向上に使われ、<strong className="text-slate-300">非公開</strong>マークのついている項目は他会員には表示されないのでご安心ください。
             </div>
             <ProfileFieldsForm form={form} setForm={setForm} hideBioSns />
             <div className="flex justify-between">
@@ -312,8 +320,9 @@ function NewIssueWizard() {
                 <div>
                   <label className="text-white font-medium mb-2 block">現在の事業の状況・お悩み</label>
                   <textarea value={sourceText} onChange={e => setSourceText(e.target.value)}
-                    rows={10} placeholder="事業の現状、伸び悩んでいること、課題に感じていることなどを自由にご記入ください。詳しく書くほどAIの精度が上がります。"
+                    rows={11} placeholder={TEXT_PLACEHOLDER}
                     className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-sky resize-none" />
+                  <p className="text-slate-500 text-xs mt-1">事業の現状や伸び悩んでいることなどを具体的に書くほど、解析の精度が上がります。</p>
                 </div>
                 <div className="flex justify-between items-center">
                   <button onClick={() => setStep(1)} className="text-slate-300 hover:text-white px-4 py-2 text-sm">戻る</button>
@@ -336,9 +345,10 @@ function NewIssueWizard() {
 
                 {/* 1問ずつ表示 */}
                 <div className="bg-brand-navy-900/40 border border-brand-navy-700 rounded-xl p-4">
-                  <label className="text-white text-base mb-3 block leading-relaxed">
+                  <label className="text-white text-base mb-1 block leading-relaxed">
                     <span className="text-brand-sky-400 font-bold mr-1">Q{qaIndex + 1}.</span>{QA_QUESTIONS[qaIndex]}
                   </label>
+                  <p className="text-slate-500 text-xs mb-3 leading-relaxed">{QA_EXAMPLES[qaIndex]}</p>
                   <textarea
                     key={qaIndex}
                     value={qaAnswers[qaIndex]}
@@ -378,8 +388,14 @@ function NewIssueWizard() {
         {step === 3 && (
           <div className="space-y-4">
             <div className="bg-brand-navy-900/40 border border-brand-navy-700 rounded-xl p-3 text-xs text-slate-300 space-y-2">
-              <p>AIが抽出した課題です。内容を確認・修正してから提出してください。提出後も編集できます。</p>
-              <p>課題の解像度を上げるためにマイページの非公開情報も参考にしています。公開させたくない情報については適宜削除や言い換えていただければ幸いです。</p>
+              {mode === 'manual' ? (
+                <p>入力した経営課題を確認・修正してから提出してください。提出後も編集できます。</p>
+              ) : (
+                <>
+                  <p>AIが抽出した課題です。内容を確認・修正してから提出してください。提出後も編集できます。</p>
+                  <p>課題の解像度を上げるためにマイページの非公開情報も参考にしています。公開させたくない情報については適宜削除や言い換えていただければ幸いです。</p>
+                </>
+              )}
             </div>
             <IssueCardsEditor issues={issues} setIssues={setIssues} />
             <div className="flex justify-between">

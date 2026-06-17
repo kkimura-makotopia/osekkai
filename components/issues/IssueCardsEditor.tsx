@@ -53,7 +53,10 @@ export function IssueCardsEditor({ issues, setIssues, max = 3 }: Props) {
           </div>
 
           <div>
-            <label className="text-slate-400 text-xs mb-1 block">見出し（コミュニティで発表する一文・質問/依頼の形）</label>
+            <label className="text-slate-400 text-xs mb-1 block">
+              タイトル
+              <span className="text-slate-500 ml-1">（おせっ会の4名テーブル内で発表するので、一目で経営課題が分かりやすい形に）</span>
+            </label>
             <textarea value={issue.summary} onChange={e => update(i, { summary: e.target.value })}
               rows={2} placeholder="例: 歩留まり分析などデータドリブンに施策決定する成功事例を知りたい"
               className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-sky resize-none" />

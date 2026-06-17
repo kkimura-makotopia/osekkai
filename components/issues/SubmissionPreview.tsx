@@ -21,7 +21,6 @@ interface Props {
 
 export function SubmissionPreview(p: Props) {
   const info: [string, string][] = [
-    ['会社名', p.company || '—'],
     ['業界', p.industry || '—'],
     ['従業員数', p.employeeCount !== '' && p.employeeCount != null ? `${p.employeeCount}名` : '—'],
     ['設立年', p.foundingYear !== '' && p.foundingYear != null ? `${p.foundingYear}年` : '—'],
@@ -42,15 +41,15 @@ export function SubmissionPreview(p: Props) {
       </div>
 
       {/* 会社情報 */}
-      <div className="bg-brand-navy-900/40 px-5 py-4">
-        <p className="text-brand-sky-400 text-xs font-bold mb-3 flex items-center gap-1.5">
+      <div className="bg-brand-navy-900/40 px-5 py-3">
+        <p className="text-brand-sky-400 text-xs font-bold mb-2 flex items-center gap-1.5">
           <span className="w-1 h-3.5 bg-brand-sky rounded-full inline-block" />会社情報
         </p>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
           {info.map(([label, value], i) => (
-            <div key={i} className={i === 4 ? 'col-span-2' : ''}>
-              <p className="text-slate-500 text-[11px] mb-0.5">{label}</p>
-              <p className="text-white text-sm font-medium">{value}</p>
+            <div key={i} className="flex items-baseline gap-2">
+              <p className="text-slate-500 text-[11px] shrink-0">{label}</p>
+              <p className="text-white text-sm font-medium truncate">{value}</p>
             </div>
           ))}
         </div>
