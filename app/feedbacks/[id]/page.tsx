@@ -243,24 +243,33 @@ export default function FeedbackDetailPage() {
         })}
       </div>
 
-      {/* コメント投稿フォーム */}
-      <form onSubmit={handleSubmit} className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-5">
-        <label className="text-slate-400 text-sm block mb-2">コメントを投稿</label>
-        <textarea
-          value={content}
-          onChange={e => setContent(e.target.value)}
-          rows={4}
-          placeholder="このおせっかいに対するコメントを入力..."
-          className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-brand-sky resize-y min-h-[100px] mb-3"
-        />
-        <button
-          type="submit"
-          disabled={submitting || !content.trim()}
-          className="bg-brand-sky hover:bg-brand-sky-400 disabled:opacity-60 disabled:cursor-not-allowed text-white px-5 py-2 rounded-xl text-sm font-medium"
-        >
-          {submitting ? '投稿中...' : 'コメントを投稿'}
-        </button>
-      </form>
+      {/* コメント投稿フォーム（ゲストは投稿不可） */}
+      {viewerIsGuest ? (
+        <div className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-5 text-center">
+          <p className="text-slate-400 text-sm">
+            コメントの投稿は正会員のみ可能です。<br />
+            運営の承認後にコメントできるようになります。
+          </p>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-5">
+          <label className="text-slate-400 text-sm block mb-2">コメントを投稿</label>
+          <textarea
+            value={content}
+            onChange={e => setContent(e.target.value)}
+            rows={4}
+            placeholder="このおせっかいに対するコメントを入力..."
+            className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-brand-sky resize-y min-h-[100px] mb-3"
+          />
+          <button
+            type="submit"
+            disabled={submitting || !content.trim()}
+            className="bg-brand-sky hover:bg-brand-sky-400 disabled:opacity-60 disabled:cursor-not-allowed text-white px-5 py-2 rounded-xl text-sm font-medium"
+          >
+            {submitting ? '投稿中...' : 'コメントを投稿'}
+          </button>
+        </form>
+      )}
 
       {/* 会員詳細ポップアップ */}
       {openUserId && (() => {

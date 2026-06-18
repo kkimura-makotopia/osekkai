@@ -21,6 +21,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions)
   if (!session?.dbUserId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (session.role === 'guest') return NextResponse.json({ error: 'ゲストはコメントできません' }, { status: 403 })
 
   try {
     const { content } = await req.json()
