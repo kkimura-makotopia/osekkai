@@ -53,6 +53,20 @@ export const authOptions: NextAuthOptions = {
         token.role = dbUser.role
       }
 
+      // セッション確認のたびにDBから最新ロールを反映
+      // （運営によるステータス変更を、再ログインなしで画面更新時に反映するため）
+      if (token.dbUserId) {
+        try {
+          const current = await prisma.user.findUnique({
+            where: { id: token.dbUserId as string },
+            select: { role: true },
+          })
+          if (current) token.role = current.role
+        } catch (e) {
+          console.error('ロール再取得に失敗', e)
+        }
+      }
+
       const now = Math.floor(Date.now() / 1000)
       const expiresAt = token.expiresAt as number | undefined
       if (expiresAt && now < expiresAt - 60) return token
