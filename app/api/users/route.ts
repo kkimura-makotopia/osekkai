@@ -3,9 +3,16 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.dbUserId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  // ?me=1 のときは自分1件だけ返す（プロフィール画面の高速化）
+  const { searchParams } = new URL(req.url)
+  if (searchParams.get('me') === '1') {
+    const me = await prisma.user.findUnique({ where: { id: session.dbUserId } })
+    return NextResponse.json(me)
+  }
 
   const users = await prisma.user.findMany({
     where: { isActive: true },

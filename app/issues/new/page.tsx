@@ -12,7 +12,6 @@ import {
 import { IssueCardsEditor, EditableIssue, emptyIssue } from '@/components/issues/IssueCardsEditor'
 import { SubmissionPreview } from '@/components/issues/SubmissionPreview'
 import { QA_QUESTIONS, QA_EXAMPLES, MODE_LABELS } from '@/lib/issueOptions'
-import { PenLine, HelpCircle, ListChecks } from 'lucide-react'
 
 const TEXT_PLACEHOLDER = `例）
 今期の売上達成度は85%着地でした。原因としては大きく分けて３つです。
@@ -23,9 +22,9 @@ const TEXT_PLACEHOLDER = `例）
 それぞれの原因について課題を深堀りしてください。`
 
 const MODE_CARDS = [
-  { mode: 'text' as const, icon: PenLine, title: '① テキスト形式', desc: '事業進捗や伸び悩んでいることなど、現在視点で経営課題を洗い出したい方におすすめ' },
-  { mode: 'qa' as const, icon: HelpCircle, title: '② 質疑応答形式', desc: '3年後のあるべき姿から逆算する未来視点で経営課題を洗い出したい方におすすめ' },
-  { mode: 'manual' as const, icon: ListChecks, title: '③ 自分で作成する', desc: '既に経営課題が明瞭で、淡々と入力したい方におすすめ' },
+  { mode: 'text' as const, title: '① テキスト形式', desc: '事業進捗や伸び悩んでいることなど、現在視点で経営課題を洗い出したい方におすすめ' },
+  { mode: 'qa' as const, title: '② 質疑応答形式', desc: '3年後のあるべき姿から逆算する未来視点で経営課題を洗い出したい方におすすめ' },
+  { mode: 'manual' as const, title: '③ 自分で作成する', desc: '既に経営課題が明瞭で、淡々と入力したい方におすすめ' },
 ]
 
 interface EventLite { id: string; title: string; heldAt: string }
@@ -88,17 +87,16 @@ function NewIssueWizard() {
 
     Promise.all([
       fetch('/api/events').then(r => r.json()),
-      fetch('/api/users').then(r => r.json()),
+      fetch('/api/users?me=1').then(r => r.json()),
       fetch('/api/issues').then(r => r.json()),
-    ]).then(([ev, users, subs]) => {
+    ]).then(([ev, me, subs]) => {
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       const upcoming = (Array.isArray(ev) ? ev : [])
         .filter((e: EventLite) => new Date(e.heldAt) >= today)
         .sort((a: EventLite, b: EventLite) => new Date(a.heldAt).getTime() - new Date(b.heldAt).getTime())
       setEvents(upcoming)
-      const me = Array.isArray(users) ? users.find((u: { id: string }) => u.id === session.dbUserId) : null
-      if (me) setForm(profileToForm(me))
+      if (me && me.id) setForm(profileToForm(me))
       setSubmittedEventIds(new Set(
         Array.isArray(subs) ? subs.map((s: { event: { id: string } }) => s.event.id) : []
       ))
@@ -258,16 +256,11 @@ function NewIssueWizard() {
             <div>
               <label className="text-white font-medium mb-2 block">入力形式</label>
               <div className="grid sm:grid-cols-3 gap-3">
-                {MODE_CARDS.map(({ mode: m, icon: Icon, title, desc }) => (
+                {MODE_CARDS.map(({ mode: m, title, desc }) => (
                   <button key={m} type="button" onClick={() => setMode(m)}
                     className={`text-left p-4 rounded-xl border transition-colors ${
                       mode === m ? 'border-brand-sky bg-brand-sky/10' : 'border-brand-navy-700 bg-brand-navy-900/40 hover:border-brand-sky/40'
                     }`}>
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-2 ${
-                      mode === m ? 'bg-brand-sky text-white' : 'bg-brand-navy-700 text-brand-sky-400'
-                    }`}>
-                      <Icon size={18} />
-                    </div>
                     <p className="text-white font-medium mb-1 text-sm">{title}</p>
                     <p className="text-slate-400 text-xs leading-relaxed">{desc}</p>
                   </button>

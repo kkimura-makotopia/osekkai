@@ -35,9 +35,8 @@ export default function MyPage() {
     if (status === 'unauthenticated') { router.push('/login'); return }
     if (status !== 'authenticated') return
 
-    fetch('/api/users').then(r => r.json()).then(users => {
-      const me = Array.isArray(users) ? users.find((u: UserProfile) => u.id === session.dbUserId) : null
-      if (me) {
+    fetch('/api/users?me=1').then(r => r.json()).then(me => {
+      if (me && me.id) {
         setProfile(me)
         setForm(profileToForm(me))
       }

@@ -67,6 +67,17 @@ export default function HelpPage() {
         </div>
       </Section>
 
+      {/* 経営課題提出フォーム */}
+      <Section title="経営課題提出フォームの使い方" icon="📝">
+        <p className="text-slate-300 text-sm leading-relaxed mb-4">
+          交流会で発表する経営課題を、AIと一緒に整理して提出できます。テキスト・質疑応答・自分で作成の3つの方法から選べます。
+        </p>
+        <Link href="/help/issues"
+          className="inline-block bg-brand-sky hover:bg-brand-sky-400 text-white text-sm font-medium px-4 py-2 rounded-xl">
+          詳しい使い方を見る →
+        </Link>
+      </Section>
+
       {/* プロフィール */}
       <Section title="プロフィールの編集" icon="✏️">
         <p className="text-slate-300 text-sm leading-relaxed">
