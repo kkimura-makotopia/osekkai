@@ -22,6 +22,7 @@ export default function IssuesHelpPage() {
 
         <Step n={2} title="ヘッダの「経営課題提出フォーム」をクリック">
           画面上部のメニューから <span className="text-brand-sky-400">経営課題提出フォーム</span> を開き、「+ 新規提出」を押します。
+          <Shot src="/guide/2_issue-click.png" alt="ヘッダの経営課題提出フォームボタン" />
         </Step>
 
         <Step n={3} title="イベント・形式を選ぶ">
@@ -31,24 +32,24 @@ export default function IssuesHelpPage() {
             <li><strong className="text-white">② 質疑応答形式</strong>：3年後のあるべき姿から逆算する未来視点。質問に1問ずつ回答</li>
             <li><strong className="text-white">③ 自分で作成する</strong>：既に課題が明確な方向け。AIを使わず直接入力</li>
           </ul>
-          <Shot src="/guide/issue-format.png" alt="イベント・形式の選択画面" />
+          <Shot src="/guide/3_issue-format.png" alt="イベント・形式の選択画面" />
         </Step>
 
         <Step n={4} title="プロフィールを入力する">
           マイページと同じ項目です。入力済みの内容は自動で補完され、ここで修正するとマイページにも反映されます。<br />
           <span className="text-slate-400 text-xs">※「非公開」マークの項目は他の会員には表示されず、課題解析の精度向上にのみ使われます。</span>
-          <Shot src="/guide/issue-profile.png" alt="プロフィール入力画面" />
+          <Shot src="/guide/4_issue-profile.png" alt="プロフィール入力画面" />
         </Step>
 
         <Step n={5} title="入力・AI解析">
           選んだ形式に沿って入力します。①テキスト・②質疑応答では「AIで課題を抽出する」を押すと、AIが課題を2〜3件にまとめます。
-          <Shot src="/guide/issue-input.png" alt="入力・AI解析画面（テキスト形式の例）" />
+          <Shot src="/guide/5_issue-input.png" alt="入力・AI解析画面（テキスト形式の例）" />
         </Step>
 
         <Step n={6} title="内容の確認・編集">
           AIの提案はあくまで下書きです。<strong className="text-slate-200">タイトルや内容は自由に編集</strong>してください（課題は最大3件）。<br />
           右上の <span className="text-brand-sky-400">💡 おせっかいを多く獲得するヒント</span> も参考にしながら、一目で伝わる形に整えましょう。
-          <Shot src="/guide/issue-edit.png" alt="内容の確認・編集画面" />
+          <Shot src="/guide/6_issue-edit.png" alt="内容の確認・編集画面" />
         </Step>
 
         <Step n={7} title="提出する" last>
