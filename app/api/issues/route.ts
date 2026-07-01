@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
 
   const { eventId, mode, sourceText, qaAnswers, issues } = await req.json()
   if (!eventId) return NextResponse.json({ error: 'eventId required' }, { status: 400 })
-  if (mode !== 'text' && mode !== 'qa') return NextResponse.json({ error: 'invalid mode' }, { status: 400 })
+  if (mode !== 'text' && mode !== 'qa' && mode !== 'manual') return NextResponse.json({ error: 'invalid mode' }, { status: 400 })
 
   const cleanIssues = sanitizeIssues(issues)
   if (cleanIssues.length === 0)

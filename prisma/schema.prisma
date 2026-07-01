@@ -175,6 +175,7 @@ model ManagementIssue {
 enum IssueMode {
   text
   qa
+  manual
 
   @@map("issue_mode")
 }
