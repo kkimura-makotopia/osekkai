@@ -27,6 +27,7 @@ export interface ProfileFormState {
   customerCount: string
   revenueGrowth: string
   revenueTarget3y: string
+  businessSummary: string
   snsLinks: Record<string, string>
 }
 
@@ -35,7 +36,7 @@ export const emptyProfileForm: ProfileFormState = {
   recentRevenue: '', fiscalMonth: '', targetRevenueScale: '', marketingChannels: [],
   foundingYear: '', fullTimeEmployees: '', branchCount: '', operatingMargin: '',
   serviceUnitPrice: '', serviceBreakdown: [], customerCount: '', revenueGrowth: '',
-  revenueTarget3y: '',
+  revenueTarget3y: '', businessSummary: '',
   snsLinks: {},
 }
 
@@ -80,6 +81,7 @@ export function profileToForm(me: Record<string, unknown>): ProfileFormState {
     customerCount: s(me.customerCount),
     revenueGrowth: s(me.revenueGrowth),
     revenueTarget3y: s(me.revenueTarget3y),
+    businessSummary: s(me.businessSummary),
     snsLinks: (me.snsLinks as Record<string, string>) ?? {},
   }
 }
@@ -319,9 +321,15 @@ export function ProfileFieldsForm({ form, setForm, hideBioSns = false }: Props) 
       {!hideBioSns && (
         <>
           <div>
-            <FieldLabel field="bio">自己紹介(経歴や事業内容)</FieldLabel>
+            <FieldLabel field="bio">経歴・プロフィール</FieldLabel>
             <textarea value={form.bio} onChange={e => setForm(p => ({ ...p, bio: e.target.value }))}
-              rows={5} placeholder="経歴や現在の事業内容などを自由にご記入ください"
+              rows={5} placeholder="これまでの経歴やご経験、人物像などを自由にご記入ください"
+              className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-brand-sky resize-none" />
+          </div>
+          <div>
+            <FieldLabel field="businessSummary">事業内容サマリ</FieldLabel>
+            <textarea value={form.businessSummary} onChange={e => setForm(p => ({ ...p, businessSummary: e.target.value }))}
+              rows={5} placeholder="現在の事業内容・提供サービス・ビジネスモデルなどを簡潔にご記入ください"
               className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-brand-sky resize-none" />
           </div>
           <div>

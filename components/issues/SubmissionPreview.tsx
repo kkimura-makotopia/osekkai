@@ -13,7 +13,6 @@ interface Props {
   industry?: string | null
   employeeCount?: string | number | null
   foundingYear?: string | number | null
-  recentRevenue?: string | null
   eventTitle?: string | null
   eventDate?: string | null
   issues: PreviewIssue[]
@@ -24,7 +23,6 @@ export function SubmissionPreview(p: Props) {
     ['業界', p.industry || '—'],
     ['従業員数', p.employeeCount !== '' && p.employeeCount != null ? `${p.employeeCount}名` : '—'],
     ['設立年', p.foundingYear !== '' && p.foundingYear != null ? `${p.foundingYear}年` : '—'],
-    ['直近の確定している期の売上', p.recentRevenue || '—'],
   ]
 
   return (

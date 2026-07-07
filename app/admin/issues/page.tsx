@@ -102,7 +102,6 @@ export default function AdminIssuesPage() {
         <table class="info">
           <tr><th>会社名</th><td>${esc(u.company || '—')}</td><th>業界</th><td>${esc(u.industry || '—')}</td></tr>
           <tr><th>従業員数</th><td>${u.employeeCount != null ? esc(u.employeeCount) + '名' : '—'}</td><th>設立年</th><td>${u.foundingYear != null ? esc(u.foundingYear) + '年' : '—'}</td></tr>
-          <tr><th>直近の確定している期の売上</th><td colspan="3">${esc(u.recentRevenue || '—')}</td></tr>
         </table>`
       const issues = s.issues.map(i => `
         <div class="issue">

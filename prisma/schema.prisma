@@ -14,7 +14,8 @@ model User {
   fullName  String?
   company   String?
   jobTitle  String?
-  bio       String?
+  bio       String?   // 経歴・プロフィール
+  businessSummary String?  // 事業内容サマリ
   industry  String?
   employeeCount Int?
   recentRevenue      String?  // 直近確定期の売上レンジ

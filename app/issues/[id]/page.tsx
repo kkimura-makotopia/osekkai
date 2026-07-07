@@ -158,7 +158,6 @@ export default function IssueDetailPage() {
             industry={submission.user.industry}
             employeeCount={submission.user.employeeCount}
             foundingYear={submission.user.foundingYear}
-            recentRevenue={submission.user.recentRevenue}
             eventTitle={submission.event.title}
             eventDate={submission.event.heldAt}
             issues={issues}

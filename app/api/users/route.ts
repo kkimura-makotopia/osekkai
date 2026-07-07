@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     where: { isActive: true },
     select: {
       id: true, email: true, name: true, fullName: true, company: true,
-      jobTitle: true, bio: true, industry: true, employeeCount: true,
+      jobTitle: true, bio: true, businessSummary: true, industry: true, employeeCount: true,
       recentRevenue: true, fiscalMonth: true, targetRevenueScale: true, marketingChannels: true,
       foundingYear: true, fullTimeEmployees: true, branchCount: true, operatingMargin: true,
       serviceUnitPrice: true, serviceBreakdown: true, customerCount: true, revenueGrowth: true,
@@ -60,6 +60,7 @@ export async function PATCH(req: NextRequest) {
       ...(body.company !== undefined ? { company: body.company } : {}),
       ...(body.jobTitle !== undefined ? { jobTitle: body.jobTitle } : {}),
       ...(body.bio !== undefined ? { bio: body.bio } : {}),
+      ...(body.businessSummary !== undefined ? { businessSummary: normStr(body.businessSummary) } : {}),
       ...(body.snsLinks !== undefined ? { snsLinks: body.snsLinks ?? {} } : {}),
       ...(body.industry !== undefined ? { industry: body.industry } : {}),
       ...(body.employeeCount !== undefined ? { employeeCount: normInt(body.employeeCount) } : {}),

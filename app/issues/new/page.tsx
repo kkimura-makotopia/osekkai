@@ -415,7 +415,6 @@ function NewIssueWizard() {
               industry={form.industry}
               employeeCount={form.employeeCount}
               foundingYear={form.foundingYear}
-              recentRevenue={form.recentRevenue}
               eventTitle={selectedEvent?.title}
               eventDate={selectedEvent?.heldAt}
               issues={issues}

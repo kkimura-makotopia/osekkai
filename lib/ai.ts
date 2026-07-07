@@ -42,7 +42,8 @@ const PROFILE_LABELS: Record<string, string> = {
   customerCount: '顧客数',
   revenueGrowth: '3年前からの売上成長率',
   revenueTarget3y: '3年後の売上目標',
-  bio: '自己紹介・事業内容',
+  bio: '経歴・プロフィール',
+  businessSummary: '事業内容サマリ',
 }
 
 function buildProfileContext(profile: Record<string, unknown>): string {

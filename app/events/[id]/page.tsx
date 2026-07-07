@@ -47,6 +47,7 @@ interface UserFull {
   company: string | null
   jobTitle: string | null
   bio: string | null
+  businessSummary: string | null
   industry: string | null
   employeeCount: number | null
   foundingYear: number | null
@@ -539,17 +540,20 @@ export default function EventDetailPage() {
                   {u.foundingYear != null && (
                     <div className="flex gap-2"><span className="text-slate-500 w-24 shrink-0">設立年:</span><span className="text-slate-200">{u.foundingYear}年</span></div>
                   )}
-                  {u.recentRevenue && (
-                    <div className="flex gap-2"><span className="text-slate-500 w-24 shrink-0">直近の売上:</span><span className="text-slate-200">{u.recentRevenue}</span></div>
-                  )}
                   {u.serviceUnitPrice && (
                     <div className="flex gap-2"><span className="text-slate-500 w-24 shrink-0">平均単価:</span><span className="text-slate-200">{u.serviceUnitPrice}</span></div>
                   )}
                 </div>
                 {u.bio && (
                   <div className="mb-3">
-                    <h4 className="text-slate-400 text-xs font-medium mb-1">自己紹介</h4>
+                    <h4 className="text-slate-400 text-xs font-medium mb-1">経歴・プロフィール</h4>
                     <p className="text-slate-300 text-sm whitespace-pre-wrap leading-relaxed">{u.bio}</p>
+                  </div>
+                )}
+                {u.businessSummary && (
+                  <div className="mb-3">
+                    <h4 className="text-slate-400 text-xs font-medium mb-1">事業内容サマリ</h4>
+                    <p className="text-slate-300 text-sm whitespace-pre-wrap leading-relaxed">{u.businessSummary}</p>
                   </div>
                 )}
                 {sns.length > 0 && (

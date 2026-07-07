@@ -6,9 +6,9 @@ export const PUBLIC_FIELDS = [
   'industry',
   'employeeCount',
   'foundingYear',
-  'recentRevenue',
   'serviceUnitPrice',
   'bio',
+  'businessSummary',
   'snsLinks',
   'email',
 ] as const
