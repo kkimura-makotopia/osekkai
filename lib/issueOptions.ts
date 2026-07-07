@@ -15,13 +15,48 @@ export type IssueCategory = (typeof ISSUE_CATEGORIES)[number]
 export const isIssueCategory = (v: string): v is IssueCategory =>
   (ISSUE_CATEGORIES as readonly string[]).includes(v)
 
-// 相談の種別（スライドの【ヒアリング】【依頼】タグに対応）
-export const REQUEST_TYPES = ['ヒアリング', '依頼'] as const
+// 相談の種別（6パターン）
+export const REQUEST_TYPES = [
+  '原因分析型',
+  '打ち手探索型',
+  '意思決定型',
+  'アイデア探索型',
+  '人脈紹介型',
+  '経営相談型',
+] as const
 export type RequestType = (typeof REQUEST_TYPES)[number]
 
-export const REQUEST_TYPE_DESC: Record<RequestType, string> = {
-  ヒアリング: '他の経営者の知見・成功事例・Tips・やり方を聞きたい相談',
-  依頼: '特定の人・企業・サービスを紹介してほしい／繋がりたいお願い',
+export const REQUEST_TYPE_INFO: Record<RequestType, { def: string; expect: string; examples: string[] }> = {
+  原因分析型: {
+    def: '問題は起きているが、本当の原因・ボトルネックが分からない。',
+    expect: '根本原因、仮説、見落とし、ボトルネック',
+    examples: ['売上が伸びない原因を知りたい', '採用できない理由を知りたい', '離職率が高い原因を知りたい'],
+  },
+  打ち手探索型: {
+    def: '課題は明確なので、具体的な解決策や成功事例を知りたい。',
+    expect: '成功事例、具体施策、Tips、ノウハウ、おすすめツール',
+    examples: ['OEM代理店を増やしたい', '紹介営業を仕組み化したい', 'LINE登録率を上げたい'],
+  },
+  意思決定型: {
+    def: '複数の選択肢で迷っており、判断材料が欲しい。',
+    expect: '判断軸、メリット、デメリット、リスク、優先順位',
+    examples: ['SaaSへピボットすべきか', '採用か外注か', '新規事業をやるべきか'],
+  },
+  アイデア探索型: {
+    def: '正解を探すのではなく、新しい視点・発想・壁打ちを求めている。',
+    expect: '新しいアイデア、他業界事例、発想の転換、壁打ち',
+    examples: ['広報×〇〇を考えたい', 'AI時代の営業を議論したい', '新サービスを考えたい'],
+  },
+  人脈紹介型: {
+    def: '知識ではなく、人・会社・専門家・代理店・採用候補などとの接点を求めている。',
+    expect: '人の紹介、企業紹介、専門家紹介、パートナー紹介、コミュニティ紹介',
+    examples: ['LINE専門家を紹介してほしい', 'OEM代理店を紹介してほしい', '外国人支援企業と繋がりたい'],
+  },
+  経営相談型: {
+    def: '正解のない経営判断について、他の経営者の経験・考え方を聞きたい。',
+    expect: '実体験、判断基準、経営者としての考え方、意思決定プロセス、長期視点',
+    examples: ['権限委譲について相談したい', '幹部育成について議論したい', '経営者としてどう判断するか聞きたい'],
+  },
 }
 
 // ②質疑応答形式の設問と回答例（exampleは入力欄にグレーで表示）

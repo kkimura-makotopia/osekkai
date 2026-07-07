@@ -1,8 +1,14 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { ISSUE_CATEGORIES, REQUEST_TYPES } from '@/lib/issueOptions'
+import { ISSUE_CATEGORIES, REQUEST_TYPES, REQUEST_TYPE_INFO } from '@/lib/issueOptions'
 
 // 使用モデル（変更する場合はこの1行のみ）
 const MODEL = 'claude-sonnet-4-6'
+
+// プロンプトに埋め込む種別の定義ブロック
+const REQUEST_TYPE_BLOCK = REQUEST_TYPES.map((t, i) => {
+  const info = REQUEST_TYPE_INFO[t]
+  return `${i + 1}. ${t}\n   定義：${info.def}\n   期待する回答：${info.expect}\n   見出し例：${info.examples.join(' / ')}`
+}).join('\n')
 
 export interface AiIssue {
   category: string
@@ -70,13 +76,12 @@ const SYSTEM_PROMPT = `あなたは経営者コミュニティのファシリテ
 
 【最重要】評論・分析・指摘は絶対にしないでください。「〜が課題である」「〜が真因だ」といった解説口調は禁止です。代わりに、本人が他の経営者に投げかける【質問】や、紹介してほしい相手を頼む【お願い】の形にしてください。
 
-各相談項目は次の2種類のいずれかです:
-- ヒアリング: 他の経営者の知見・成功事例・Tips・やり方を教えてもらう相談
-- 依頼: 特定の人・企業・サービスを紹介してもらう、または繋がりたいというお願い
+各相談項目には、内容に最も合う「種別」を次の6つから1つ選んでください:
+${REQUEST_TYPE_BLOCK}
 
 各項目の構成:
 - category: 課題カテゴリ（指定の選択肢から選ぶ）
-- requestType: 「ヒアリング」か「依頼」
+- requestType: 上記6種別のうち、その相談に最も合うものを1つ
 - summary: コミュニティで発表する見出しの一文。必ず質問・依頼の形にする。
   （良い例:「歩留まり分析などデータドリブンに施策決定することでの成功事例を知りたい」「3名以上の社労士事務所と繋がりが多いアライアンスパートナーを発見したい」「ストック型のビジネスモデルを構築するにあたり既存顧客へのクロスセルはどのように行っていますか？」）
 - detail: 背景の説明（現状の具体的な数字・取り組み・これまで試したことをプロフィール情報も活かして記述）と、「具体的に何を聞きたいか／どんな相手を紹介してほしいか」を明確に書く。1〜3文。
@@ -91,10 +96,10 @@ const SYSTEM_PROMPT = `あなたは経営者コミュニティのファシリテ
 - 背景（現状の数字・状況）は具体的に書いてよいが、「聞きたいこと」の部分は誰でも答えられる開かれた問いにする。
 
 参考にすべき良い見出しのトーン:
-- 【マーケティング課題】【ヒアリング】歩留まり分析などデータドリブンに施策決定することでの成功事例を知りたい
-- 【経営課題】【ヒアリング】代理店数が増え管理工数が大きくなってきているので代理店管理のTipsを知りたい
-- 【採用課題】【依頼】営業人材を紹介してくれるエージェントを知りたい
-- 【事業課題】【依頼】共催セミナーを実施できる企業を紹介してほしい
+- 【マーケティング課題】【原因分析型】広告経由の売上が伸び悩んでいる原因を知りたい
+- 【営業課題】【打ち手探索型】紹介営業を仕組み化した成功事例やTipsを知りたい
+- 【経営課題】【意思決定型】採用を強化すべきか外注に切り替えるべきか、判断軸を聞きたい
+- 【事業課題】【人脈紹介型】共催セミナーを一緒に実施できる企業を紹介してほしい
 
 必ず日本語で、2〜3件、submit_issues ツールで回答してください。`
 
@@ -134,7 +139,7 @@ const issueTool: Anthropic.Tool = {
             requestType: {
               type: 'string',
               enum: [...REQUEST_TYPES],
-              description: 'ヒアリング（知見を聞く）か 依頼（紹介してもらう）',
+              description: '相談の種別（6種別のうち内容に最も合うもの）',
             },
             summary: { type: 'string', description: 'コミュニティで発表する見出しの一文（質問・依頼の形）' },
             detail: { type: 'string', description: '背景と、具体的に聞きたいこと／紹介してほしいこと' },
@@ -174,7 +179,7 @@ export async function analyzeToIssues(p: AnalyzeParams): Promise<AiIssue[]> {
 
   return issues.map(i => ({
     category: String(i.category ?? 'その他'),
-    requestType: String(i.requestType ?? 'ヒアリング'),
+    requestType: String(i.requestType ?? '原因分析型'),
     summary: String(i.summary ?? ''),
     detail: String(i.detail ?? ''),
   }))

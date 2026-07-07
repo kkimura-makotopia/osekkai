@@ -1,6 +1,6 @@
 'use client'
 import { Dispatch, SetStateAction } from 'react'
-import { ISSUE_CATEGORIES, REQUEST_TYPES } from '@/lib/issueOptions'
+import { ISSUE_CATEGORIES, REQUEST_TYPES, REQUEST_TYPE_INFO, RequestType } from '@/lib/issueOptions'
 
 export interface EditableIssue {
   category: string
@@ -9,7 +9,7 @@ export interface EditableIssue {
   detail: string
 }
 
-export const emptyIssue: EditableIssue = { category: 'その他', requestType: 'ヒアリング', summary: '', detail: '' }
+export const emptyIssue: EditableIssue = { category: 'その他', requestType: '原因分析型', summary: '', detail: '' }
 
 interface Props {
   issues: EditableIssue[]
@@ -45,10 +45,23 @@ export function IssueCardsEditor({ issues, setIssues, max = 3 }: Props) {
             </div>
             <div>
               <label className="text-slate-400 text-xs mb-1 block">種別</label>
-              <select value={issue.requestType} onChange={e => update(i, { requestType: e.target.value })}
-                className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-brand-sky">
-                {REQUEST_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
+              {(() => {
+                const known = (REQUEST_TYPES as readonly string[]).includes(issue.requestType)
+                return (
+                  <>
+                    <select value={issue.requestType} onChange={e => update(i, { requestType: e.target.value })}
+                      className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-brand-sky">
+                      {!known && issue.requestType && <option value={issue.requestType}>{issue.requestType}（旧・要変更）</option>}
+                      {REQUEST_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                    {known && (
+                      <p className="text-slate-500 text-[11px] mt-1 leading-relaxed">
+                        {REQUEST_TYPE_INFO[issue.requestType as RequestType].def}
+                      </p>
+                    )}
+                  </>
+                )
+              })()}
             </div>
           </div>
 

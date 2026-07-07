@@ -46,7 +46,7 @@ export default function IssueDetailPage() {
       const data: Submission = await r.json()
       setSubmission(data)
       setIssues(data.issues.map(i => ({
-        category: i.category, requestType: i.requestType ?? 'ヒアリング', summary: i.summary, detail: i.detail ?? '',
+        category: i.category, requestType: i.requestType ?? '原因分析型', summary: i.summary, detail: i.detail ?? '',
       })))
       setLoading(false)
     })
