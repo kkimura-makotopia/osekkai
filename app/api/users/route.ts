@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
       revenueTarget3y: true,
       image: true, role: true, snsLinks: true,
       referralTemplate: true, isActive: true, createdAt: true,
-      _count: { select: { createdEvents: true, sentFeedbacks: true } },
+      _count: { select: { createdEvents: true, sentFeedbacks: true, receivedFeedbacks: true } },
     },
     orderBy: { createdAt: 'asc' },
   })

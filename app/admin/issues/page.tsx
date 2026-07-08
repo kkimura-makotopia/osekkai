@@ -1,7 +1,7 @@
 'use client'
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, Suspense } from 'react'
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ISSUE_CATEGORIES, MODE_LABELS } from '@/lib/issueOptions'
 
@@ -43,9 +43,11 @@ table.info td { padding:4px 8px; }
 .detail { color:#475569; font-size:12px; white-space:pre-wrap; margin-top:4px; }
 `
 
-export default function AdminIssuesPage() {
+function AdminIssuesInner() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const userParam = searchParams.get('user')
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(true)
   const [eventFilter, setEventFilter] = useState('all')
@@ -69,10 +71,18 @@ export default function AdminIssuesPage() {
   }, [submissions])
 
   const filtered = useMemo(() => submissions.filter(s => {
+    if (userParam && s.user.id !== userParam) return false
     if (eventFilter !== 'all' && s.event.id !== eventFilter) return false
     if (categoryFilter !== 'all' && !s.issues.some(i => i.category === categoryFilter)) return false
     return true
-  }), [submissions, eventFilter, categoryFilter])
+  }), [submissions, eventFilter, categoryFilter, userParam])
+
+  // ?user= 指定時の対象会員名（提出があれば取得）
+  const filteredUserName = useMemo(() => {
+    if (!userParam) return null
+    const s = submissions.find(x => x.user.id === userParam)
+    return s ? (s.user.fullName ?? s.user.name ?? '対象の会員') : '対象の会員'
+  }, [submissions, userParam])
 
   const totalIssues = filtered.reduce((n, s) => n + s.issues.length, 0)
   const selectedCount = filtered.filter(s => selected.has(s.id)).length
@@ -139,6 +149,13 @@ export default function AdminIssuesPage() {
     <div className="max-w-5xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-white mb-1">経営課題（管理）</h1>
       <p className="text-slate-400 text-sm mb-6">会員が提出した経営課題の一覧です。提出 {filtered.length} 件 / 課題 {totalIssues} 件</p>
+
+      {userParam && (
+        <div className="mb-4 flex items-center justify-between gap-3 bg-brand-sky/10 border border-brand-sky/30 rounded-xl px-4 py-2.5">
+          <p className="text-brand-sky-400 text-sm"><strong className="text-white">{filteredUserName}</strong> さんの経営課題を表示中</p>
+          <button onClick={() => router.push('/admin/issues')} className="text-slate-300 hover:text-white text-xs shrink-0">絞り込みを解除 ✕</button>
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-3 mb-4">
         <select value={eventFilter} onChange={e => setEventFilter(e.target.value)}
@@ -218,5 +235,13 @@ export default function AdminIssuesPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function AdminIssuesPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin w-8 h-8 border-2 border-brand-sky border-t-transparent rounded-full" /></div>}>
+      <AdminIssuesInner />
+    </Suspense>
   )
 }
