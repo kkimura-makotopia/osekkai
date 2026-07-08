@@ -66,6 +66,11 @@ function NewIssueWizard() {
   const [analyzeProgress, setAnalyzeProgress] = useState(0)
   const [hintOpen, setHintOpen] = useState(true)
 
+  // ステップ切り替え時に画面最上部へスクロール
+  useEffect(() => {
+    window.scrollTo({ top: 0 })
+  }, [step])
+
   // AI解析中の進捗バー（疑似進捗。応答受信で100%）
   useEffect(() => {
     if (!analyzing) return
