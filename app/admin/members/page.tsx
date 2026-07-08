@@ -37,11 +37,6 @@ interface Submission {
 }
 
 const ROLE_LABELS: Record<string, string> = { admin: '運営管理者', member: '正会員', guest: 'ゲスト' }
-const ROLE_STYLES: Record<string, string> = {
-  admin: 'bg-amber-500/20 text-amber-400',
-  member: 'bg-blue-500/20 text-blue-400',
-  guest: 'bg-slate-500/20 text-slate-300',
-}
 
 // CSVセルのエスケープ（ダブルクォートで囲み、内部の " は "" に）
 const csvCell = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`
@@ -229,23 +224,20 @@ export default function AdminMembersPage() {
                       </button>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROLE_STYLES[u.role] ?? ROLE_STYLES.guest}`}>
-                          {ROLE_LABELS[u.role] ?? u.role}
-                        </span>
-                        {u.id !== session?.dbUserId && (
-                          <select
-                            value={u.role}
-                            disabled={updatingId === u.id}
-                            onChange={e => handleRoleChange(u.id, e.target.value)}
-                            className="bg-brand-navy-700 border border-brand-navy-700 text-slate-200 text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-blue-500 disabled:opacity-60"
-                          >
-                            <option value="guest">ゲスト</option>
-                            <option value="member">正会員</option>
-                            <option value="admin">運営管理者</option>
-                          </select>
-                        )}
-                      </div>
+                      {u.id !== session?.dbUserId ? (
+                        <select
+                          value={u.role}
+                          disabled={updatingId === u.id}
+                          onChange={e => handleRoleChange(u.id, e.target.value)}
+                          className="bg-brand-navy-700 border border-brand-navy-700 text-slate-200 text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-blue-500 disabled:opacity-60"
+                        >
+                          <option value="guest">ゲスト</option>
+                          <option value="member">正会員</option>
+                          <option value="admin">運営管理者</option>
+                        </select>
+                      ) : (
+                        <span className="text-slate-400 text-xs">{ROLE_LABELS[u.role] ?? u.role}（自分）</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 hidden xl:table-cell text-slate-400 text-sm">
                       {new Date(u.createdAt).toLocaleDateString('ja-JP')}

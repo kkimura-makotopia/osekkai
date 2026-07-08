@@ -80,6 +80,27 @@ const FB_COLORS: Record<string, string> = {
 const FB_TYPE_OPTIONS = ['intro', 'feedback', 'advice', 'other'] as const
 type FbTab = 'received' | 'sent'
 
+// おせっかい種類ごとの入力項目（other は自由入力）
+interface FbField { key: string; label: string; textarea?: boolean; required?: boolean; placeholder?: string }
+const FB_FIELDS: Record<string, FbField[]> = {
+  intro: [
+    { key: 'company', label: '会社名', placeholder: '例: 株式会社〇〇' },
+    { key: 'name', label: '氏名', placeholder: '例: 山田 太郎' },
+    { key: 'reason', label: '紹介理由', textarea: true, required: true, placeholder: 'なぜこの方を紹介したいか' },
+    { key: 'url', label: 'URL', placeholder: 'https://...' },
+  ],
+  feedback: [
+    { key: 'service', label: '会社（サービス）名', placeholder: '例: 〇〇（サービス名）' },
+    { key: 'reason', label: '紹介理由', textarea: true, required: true, placeholder: 'なぜこのサービスを紹介したいか' },
+    { key: 'url', label: 'URL', placeholder: 'https://...' },
+  ],
+  advice: [
+    { key: 'problem', label: 'お相手の課題', textarea: true, required: true, placeholder: '相手が抱えている課題' },
+    { key: 'knowledge', label: 'ナレッジ内容', textarea: true, required: true, placeholder: '共有したい知見・ノウハウ' },
+    { key: 'url', label: '参考URL', placeholder: 'https://...' },
+  ],
+}
+
 // yyyy-mm-ddThh:mm 形式（datetime-local 用）
 const toDatetimeLocal = (iso: string) => {
   const d = new Date(iso)
@@ -94,8 +115,9 @@ export default function EventDetailPage() {
   const [event, setEvent] = useState<EventDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [showFbForm, setShowFbForm] = useState(false)
-  const [fb, setFb] = useState({ toUserId: '', type: 'intro' as typeof FB_TYPE_OPTIONS[number], content: '' })
+  const [fb, setFb] = useState({ toUserId: '', type: 'intro' as typeof FB_TYPE_OPTIONS[number], content: '', fields: {} as Record<string, string> })
   const [savingFb, setSavingFb] = useState(false)
+  const [fbSentMsg, setFbSentMsg] = useState('')
   const [fbTab, setFbTab] = useState<FbTab>('received')
 
   // 編集モード（運営管理者のみ）
@@ -218,17 +240,31 @@ export default function EventDetailPage() {
     }
   }
 
+  // 種類ごとの入力を1つの content 文字列に組み立て
+  const buildFbContent = () => {
+    if (fb.type === 'other') return fb.content.trim()
+    return (FB_FIELDS[fb.type] ?? [])
+      .map(d => ({ label: d.label, val: (fb.fields[d.key] ?? '').trim() }))
+      .filter(x => x.val)
+      .map(x => `${x.label}：${x.val}`)
+      .join('\n')
+  }
+
   const handleFbSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const content = buildFbContent()
+    if (!content) return
+    setFbSentMsg('')
     setSavingFb(true)
     const res = await fetch('/api/feedbacks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...fb, eventId: id }),
+      body: JSON.stringify({ toUserId: fb.toUserId, type: fb.type, content, eventId: id }),
     })
     if (res.ok) {
-      setFb({ toUserId: '', type: 'intro', content: '' })
-      setShowFbForm(false)
+      // 送り先は保持し、入力内容だけクリア（続けて送れるようにフォームは開いたまま）
+      setFb(p => ({ toUserId: p.toUserId, type: p.type, content: '', fields: {} }))
+      setFbSentMsg('✓ 送信しました。続けて送れます。')
       reload()
     }
     setSavingFb(false)
@@ -357,7 +393,7 @@ export default function EventDetailPage() {
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-white">おせっかい</h2>
             <button
-              onClick={() => setShowFbForm(!showFbForm)}
+              onClick={() => { setShowFbForm(!showFbForm); setFbSentMsg('') }}
               className="bg-brand-sky hover:bg-brand-sky-400 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors"
               disabled={fbTargets.length === 0}
             >
@@ -400,23 +436,47 @@ export default function EventDetailPage() {
                   <label className="text-slate-400 text-xs block mb-1">種類</label>
                   <div className="flex gap-2">
                     {FB_TYPE_OPTIONS.map(t => (
-                      <button key={t} type="button" onClick={() => setFb(p => ({ ...p, type: t }))}
+                      <button key={t} type="button" onClick={() => setFb(p => ({ ...p, type: t, content: '', fields: {} }))}
                         className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${fb.type === t ? 'bg-brand-sky text-white' : 'bg-brand-navy-700 text-slate-400'}`}>
                         {FB_LABELS[t]}
                       </button>
                     ))}
                   </div>
                 </div>
-                <div>
-                  <label className="text-slate-400 text-xs block mb-1">内容</label>
-                  <textarea required value={fb.content} onChange={e => setFb(p => ({ ...p, content: e.target.value }))}
-                    rows={8} className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 resize-y min-h-[180px]" />
-                </div>
+                {fb.type === 'other' ? (
+                  <div>
+                    <label className="text-slate-400 text-xs block mb-1">内容</label>
+                    <textarea required value={fb.content} onChange={e => setFb(p => ({ ...p, content: e.target.value }))}
+                      rows={8} className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 resize-y min-h-[180px]" />
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {(FB_FIELDS[fb.type] ?? []).map(f => (
+                      <div key={f.key}>
+                        <label className="text-slate-400 text-xs block mb-1">
+                          {f.label}{f.required && <span className="text-red-400 ml-0.5">*</span>}
+                        </label>
+                        {f.textarea ? (
+                          <textarea required={f.required} value={fb.fields[f.key] ?? ''}
+                            onChange={e => setFb(p => ({ ...p, fields: { ...p.fields, [f.key]: e.target.value } }))}
+                            rows={3} placeholder={f.placeholder}
+                            className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500 resize-y" />
+                        ) : (
+                          <input required={f.required} value={fb.fields[f.key] ?? ''}
+                            onChange={e => setFb(p => ({ ...p, fields: { ...p.fields, [f.key]: e.target.value } }))}
+                            placeholder={f.placeholder}
+                            className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-1.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {fbSentMsg && <p className="text-emerald-400 text-xs">{fbSentMsg}</p>}
                 <div className="flex gap-2">
                   <button type="submit" disabled={savingFb} className="bg-brand-sky hover:bg-brand-sky-400 text-white px-4 py-1.5 rounded-lg text-sm disabled:opacity-60">
                     {savingFb ? '送信中...' : '送信'}
                   </button>
-                  <button type="button" onClick={() => setShowFbForm(false)} className="bg-brand-navy-700 text-slate-300 px-4 py-1.5 rounded-lg text-sm">キャンセル</button>
+                  <button type="button" onClick={() => { setShowFbForm(false); setFbSentMsg('') }} className="bg-brand-navy-700 text-slate-300 px-4 py-1.5 rounded-lg text-sm">閉じる</button>
                 </div>
               </form>
             )
