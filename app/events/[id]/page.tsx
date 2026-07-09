@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import { FeedbackContent } from '@/components/feedback/FeedbackContent'
 
 interface InviteeUser {
   id: string
@@ -246,7 +247,7 @@ export default function EventDetailPage() {
     return (FB_FIELDS[fb.type] ?? [])
       .map(d => ({ label: d.label, val: (fb.fields[d.key] ?? '').trim() }))
       .filter(x => x.val)
-      .map(x => `${x.label}：${x.val}`)
+      .map(x => `【${x.label}】${x.val}`)
       .join('\n')
   }
 
@@ -541,7 +542,7 @@ export default function EventDetailPage() {
                       </div>
                     </div>
                   ) : (
-                    <p className="text-slate-300 text-sm mb-2">{f.content}</p>
+                    <div className="mb-2"><FeedbackContent content={f.content} className="text-sm" /></div>
                   )}
 
                   <div className="text-xs text-slate-500 flex items-center gap-2 flex-wrap">

@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import { FeedbackContent } from '@/components/feedback/FeedbackContent'
 
 interface UserLite {
   id: string
@@ -188,7 +189,7 @@ export default function FeedbackDetailPage() {
           <span className="text-slate-500 text-xs ml-auto">{new Date(fb.createdAt).toLocaleString('ja-JP')}</span>
         </div>
         <div className="bg-brand-navy-900/60 border border-brand-navy-700 rounded-xl p-4 mb-4">
-          <p className="text-slate-200 text-sm whitespace-pre-wrap leading-relaxed">{fb.content}</p>
+          <FeedbackContent content={fb.content} className="text-sm" />
         </div>
         <p className="text-slate-500 text-xs flex items-center gap-2 flex-wrap">
           {renderUserText(fb.fromUser)}

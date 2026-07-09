@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import { FeedbackContent } from '@/components/feedback/FeedbackContent'
 
 interface UserLite {
   id: string
@@ -254,7 +255,7 @@ export default function FeedbacksPage() {
                 {f.event && <span className="text-slate-500 text-xs truncate">交流会: {f.event.title}</span>}
                 <span className="text-slate-500 text-xs ml-auto">{new Date(f.createdAt).toLocaleDateString('ja-JP')}</span>
               </div>
-              <p className="text-slate-200 text-sm line-clamp-3 mb-3">{f.content}</p>
+              <div className="mb-3 max-h-40 overflow-hidden"><FeedbackContent content={f.content} className="text-sm" /></div>
               <div className="flex items-center gap-2 flex-wrap">
                 {/* アクションボタン群（名前の左側） */}
                 {isAdmin && (
@@ -307,7 +308,7 @@ export default function FeedbacksPage() {
                 <button onClick={() => setOpenFb(null)} className="text-slate-400 hover:text-white text-2xl leading-none w-8 h-8 flex items-center justify-center">×</button>
               </div>
               <div className="bg-brand-navy-900/50 border border-brand-navy-700 rounded-xl p-4 mb-4">
-                <p className="text-slate-200 text-sm whitespace-pre-wrap leading-relaxed">{openFb.content}</p>
+                <FeedbackContent content={openFb.content} className="text-sm" />
               </div>
               <div className="space-y-1.5 text-xs text-slate-400 pt-3 border-t border-brand-navy-700 mb-4">
                 <div>
