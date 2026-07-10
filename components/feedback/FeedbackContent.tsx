@@ -1,8 +1,14 @@
 'use client'
 import React from 'react'
 
+// 長いURLの表示を短縮（プロトコルを除き、長い場合は末尾を … に）
+function shortenUrl(url: string): string {
+  const stripped = url.replace(/^https?:\/\//, '')
+  return stripped.length > 38 ? stripped.slice(0, 38) + '…' : stripped
+}
+
 // 本文中の URL をクリック可能なリンクに変換
-function linkify(text: string, keyPrefix: string): React.ReactNode[] {
+function linkify(text: string, keyPrefix: string, truncate: boolean): React.ReactNode[] {
   const parts = text.split(/(https?:\/\/[^\s]+)/g)
   return parts.map((part, i) => {
     if (/^https?:\/\//.test(part)) {
@@ -12,9 +18,10 @@ function linkify(text: string, keyPrefix: string): React.ReactNode[] {
           href={part}
           target="_blank"
           rel="noopener noreferrer"
+          title={part}
           className="text-brand-sky-400 underline break-all hover:text-brand-sky"
         >
-          {part}
+          {truncate ? shortenUrl(part) : part}
         </a>
       )
     }
@@ -31,7 +38,11 @@ function parseLine(line: string): { label: string | null; rest: string } {
   return { label: null, rest: line }
 }
 
-export function FeedbackContent({ content, className = '' }: { content: string; className?: string }) {
+export function FeedbackContent({
+  content,
+  className = '',
+  truncateUrls = false,
+}: { content: string; className?: string; truncateUrls?: boolean }) {
   const lines = content.split('\n')
   return (
     <div className={`space-y-0.5 ${className}`}>
@@ -41,7 +52,7 @@ export function FeedbackContent({ content, className = '' }: { content: string; 
         return (
           <p key={idx} className="leading-relaxed">
             {label && <span className="text-slate-400 font-medium">【{label}】</span>}
-            <span className="text-slate-200">{label ? ' ' : ''}{linkify(rest, String(idx))}</span>
+            <span className="text-slate-200">{label ? ' ' : ''}{linkify(rest, String(idx), truncateUrls)}</span>
           </p>
         )
       })}

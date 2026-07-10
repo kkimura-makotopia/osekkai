@@ -85,8 +85,8 @@ type FbTab = 'received' | 'sent'
 interface FbField { key: string; label: string; textarea?: boolean; required?: boolean; placeholder?: string }
 const FB_FIELDS: Record<string, FbField[]> = {
   intro: [
-    { key: 'company', label: '会社名', placeholder: '例: 株式会社〇〇' },
-    { key: 'name', label: '氏名', placeholder: '例: 山田 太郎' },
+    { key: 'company', label: '会社名', required: true, placeholder: '例: 株式会社〇〇' },
+    { key: 'name', label: '氏名', required: true, placeholder: '例: 山田 太郎' },
     { key: 'reason', label: '紹介理由', textarea: true, required: true, placeholder: 'なぜこの方を紹介したいか' },
     { key: 'url', label: 'URL', placeholder: 'https://...' },
   ],
@@ -542,7 +542,7 @@ export default function EventDetailPage() {
                       </div>
                     </div>
                   ) : (
-                    <div className="mb-2"><FeedbackContent content={f.content} className="text-sm" /></div>
+                    <div className="mb-2"><FeedbackContent content={f.content} className="text-sm" truncateUrls /></div>
                   )}
 
                   <div className="text-xs text-slate-500 flex items-center gap-2 flex-wrap">

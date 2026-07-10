@@ -255,7 +255,7 @@ export default function FeedbacksPage() {
                 {f.event && <span className="text-slate-500 text-xs truncate">交流会: {f.event.title}</span>}
                 <span className="text-slate-500 text-xs ml-auto">{new Date(f.createdAt).toLocaleDateString('ja-JP')}</span>
               </div>
-              <div className="mb-3 max-h-40 overflow-hidden"><FeedbackContent content={f.content} className="text-sm" /></div>
+              <div className="mb-3 max-h-40 overflow-hidden"><FeedbackContent content={f.content} className="text-sm" truncateUrls /></div>
               <div className="flex items-center gap-2 flex-wrap">
                 {/* アクションボタン群（名前の左側） */}
                 {isAdmin && (
