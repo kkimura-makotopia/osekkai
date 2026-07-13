@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, useRef, Suspense } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
@@ -65,6 +65,7 @@ function NewIssueWizard() {
   const [qaIndex, setQaIndex] = useState(0)
   const [analyzeProgress, setAnalyzeProgress] = useState(0)
   const [hintOpen, setHintOpen] = useState(true)
+  const loadedRef = useRef(false)
 
   // ステップ切り替え時に画面最上部へスクロール
   useEffect(() => {
@@ -89,6 +90,9 @@ function NewIssueWizard() {
     if (status === 'unauthenticated') { router.push('/login'); return }
     if (status !== 'authenticated') return
     if (session.role === 'guest') { router.push('/feedbacks'); return }
+    // 初期読み込みは一度だけ（タブ復帰時のセッション再取得で入力中フォームを上書きしない）
+    if (loadedRef.current) return
+    loadedRef.current = true
 
     Promise.all([
       fetch('/api/events').then(r => r.json()),

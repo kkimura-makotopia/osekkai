@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
@@ -30,10 +30,14 @@ export default function MyPage() {
   const [editing, setEditing] = useState(true)
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
+  const loadedRef = useRef(false)
 
   useEffect(() => {
     if (status === 'unauthenticated') { router.push('/login'); return }
     if (status !== 'authenticated') return
+    // 初期読み込みは一度だけ（タブ復帰時のセッション再取得で入力中フォームを上書きしない）
+    if (loadedRef.current) return
+    loadedRef.current = true
 
     fetch('/api/users?me=1').then(r => r.json()).then(me => {
       if (me && me.id) {
