@@ -76,7 +76,7 @@ export default function FeedbackDetailPage() {
   const { id } = useParams<{ id: string }>()
   const [fb, setFb] = useState<FeedbackDetail | null>(null)
   const [comments, setComments] = useState<Comment[]>([])
-  const [allUsers, setAllUsers] = useState<UserFull[]>([])
+  const [popupUser, setPopupUser] = useState<UserFull | null>(null)
   const [openUserId, setOpenUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [content, setContent] = useState('')
@@ -87,10 +87,9 @@ export default function FeedbackDetailPage() {
     if (status !== 'authenticated') return
     ;(async () => {
       try {
-        const [fbRes, comRes, usRes] = await Promise.all([
+        const [fbRes, comRes] = await Promise.all([
           fetch(`/api/feedbacks/${id}`),
           fetch(`/api/feedbacks/${id}/comments`),
-          fetch('/api/users'),
         ])
         if (fbRes.ok) {
           const data = await fbRes.json()
@@ -100,10 +99,6 @@ export default function FeedbackDetailPage() {
           const data = await comRes.json()
           if (Array.isArray(data)) setComments(data)
         }
-        if (usRes.ok) {
-          const data = await usRes.json()
-          if (Array.isArray(data)) setAllUsers(data)
-        }
       } catch (e) {
         console.warn('detail fetch failed', e)
       } finally {
@@ -111,6 +106,18 @@ export default function FeedbackDetailPage() {
       }
     })()
   }, [status, id, router])
+
+  // 氏名クリック時に1会員の公開プロフィールを取得
+  useEffect(() => {
+    if (!openUserId) { setPopupUser(null); return }
+    let active = true
+    fetch(`/api/users/${openUserId}`).then(async r => {
+      if (!r.ok) { if (active) setOpenUserId(null); return }
+      const u = await r.json()
+      if (active) setPopupUser(u)
+    }).catch(() => { if (active) setOpenUserId(null) })
+    return () => { active = false }
+  }, [openUserId])
 
   if (status === 'loading' || loading) return <div className="flex items-center justify-center min-h-screen"><div className="animate-spin w-8 h-8 border-2 border-brand-sky border-t-transparent rounded-full" /></div>
   if (!fb) return <div className="max-w-3xl mx-auto px-4 py-8 text-center text-slate-500">おせっかいが見つかりません</div>
@@ -274,9 +281,8 @@ export default function FeedbackDetailPage() {
       )}
 
       {/* 会員詳細ポップアップ */}
-      {openUserId && (() => {
-        const u = allUsers.find(x => x.id === openUserId)
-        if (!u || u.role === 'guest' || viewerIsGuest) return null
+      {openUserId && popupUser && (() => {
+        const u = popupUser
         const sns = Object.entries(u.snsLinks ?? {}).filter(([, v]) => v) as [string, string][]
         return (
           <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setOpenUserId(null)}>

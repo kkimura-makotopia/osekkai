@@ -1,9 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth } from '@/lib/apiAuth'
+import { requireAuth, shouldHideUser } from '@/lib/apiAuth'
 
 const ALLOWED_ROLES = ['admin', 'member', 'guest'] as const
 type AllowedRole = (typeof ALLOWED_ROLES)[number]
+
+// 1会員の公開プロフィール取得（氏名クリック時のポップアップ用）
+export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await requireAuth()
+  if ('error' in auth) return auth.error
+  const { user: viewer } = auth
+
+  const target = await prisma.user.findUnique({
+    where: { id: params.id },
+    select: {
+      id: true, name: true, fullName: true, company: true, jobTitle: true,
+      industry: true, employeeCount: true, foundingYear: true, serviceUnitPrice: true,
+      bio: true, businessSummary: true, image: true, role: true, email: true, snsLinks: true,
+    },
+  })
+  if (!target) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  // 匿名対象（ゲスト閲覧 or 対象がゲスト、かつ自分以外）はプロフィールを開かせない
+  if (shouldHideUser(viewer.role, viewer.id, target)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+  return NextResponse.json(target)
+}
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requireAuth()

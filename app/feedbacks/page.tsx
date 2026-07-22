@@ -76,7 +76,7 @@ export default function FeedbacksPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([])
-  const [allUsers, setAllUsers] = useState<UserFull[]>([])
+  const [popupUser, setPopupUser] = useState<UserFull | null>(null)
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<Tab>('received')
   const [filter, setFilter] = useState<FbFilter>('all')
@@ -90,19 +90,11 @@ export default function FeedbacksPage() {
     if (status !== 'authenticated') return
     ;(async () => {
       try {
-        const [fbRes, usRes] = await Promise.all([
-          fetch('/api/feedbacks'),
-          fetch('/api/users'),
-        ])
+        const fbRes = await fetch('/api/feedbacks')
         if (fbRes.ok) {
           const t = await fbRes.text()
           const d = t ? JSON.parse(t) : []
           if (Array.isArray(d)) setFeedbacks(d)
-        }
-        if (usRes.ok) {
-          const t = await usRes.text()
-          const d = t ? JSON.parse(t) : []
-          if (Array.isArray(d)) setAllUsers(d)
         }
       } catch (e) {
         console.warn('feedbacks fetch failed', e)
@@ -111,6 +103,18 @@ export default function FeedbacksPage() {
       }
     })()
   }, [status, router])
+
+  // 氏名クリック時に1会員の公開プロフィールを取得（一覧は取得しない）
+  useEffect(() => {
+    if (!openUserId) { setPopupUser(null); return }
+    let active = true
+    fetch(`/api/users/${openUserId}`).then(async r => {
+      if (!r.ok) { if (active) setOpenUserId(null); return }
+      const u = await r.json()
+      if (active) setPopupUser(u)
+    }).catch(() => { if (active) setOpenUserId(null) })
+    return () => { active = false }
+  }, [openUserId])
 
   if (status === 'loading' || loading) return <div className="flex items-center justify-center min-h-screen"><div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full" /></div>
 
@@ -350,12 +354,8 @@ export default function FeedbacksPage() {
       )}
 
       {/* 会員詳細ポップアップ */}
-      {openUserId && (() => {
-        const u = allUsers.find(x => x.id === openUserId)
-        if (!u || u.role === 'guest' || viewerIsGuest) {
-          // データが取れない / 表示対象がゲスト / 閲覧者がゲスト の場合は開かない
-          return null
-        }
+      {openUserId && popupUser && (() => {
+        const u = popupUser
         const sns = Object.entries(u.snsLinks ?? {}).filter(([, v]) => v) as [string, string][]
         return (
           <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setOpenUserId(null)}>

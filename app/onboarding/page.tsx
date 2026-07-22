@@ -27,11 +27,10 @@ export default function OnboardingPage() {
     if (status !== 'authenticated') return
     ;(async () => {
       try {
-        const r = await fetch('/api/users')
+        const r = await fetch('/api/users?me=1')
         if (!r.ok) { setLoading(false); return }
-        const us = await r.json()
-        const me: MeProfile | undefined = Array.isArray(us) ? us.find((u: MeProfile) => u.id === session?.dbUserId) : undefined
-        if (me) {
+        const me: MeProfile | null = await r.json()
+        if (me && me.id) {
           setForm({
             fullName: me.fullName ?? '',
             company: me.company ?? '',

@@ -131,6 +131,7 @@ export default function EventDetailPage() {
 
   // 会員詳細モーダル
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const [popupUser, setPopupUser] = useState<UserFull | null>(null)
 
   // FB インライン編集
   const [editingFbId, setEditingFbId] = useState<string | null>(null)
@@ -177,7 +178,9 @@ export default function EventDetailPage() {
   }
 
   const openUserModal = async (uid: string) => {
-    await loadAllUsersOnce()
+    const res = await fetch(`/api/users/${uid}`)
+    if (!res.ok) return // ゲスト等でプロフィール非公開の場合は開かない
+    setPopupUser(await res.json())
     setSelectedUserId(uid)
   }
 
@@ -187,12 +190,10 @@ export default function EventDetailPage() {
     if (status === 'unauthenticated') { router.push('/login'); return }
     if (status === 'authenticated' && session?.role === 'guest') { router.push('/events'); return }
     if (status !== 'authenticated') return
-    Promise.all([
-      fetch(`/api/events/${id}`).then(r => r.json()),
-      fetch('/api/users').then(r => r.json()),
-    ]).then(([ev, us]) => {
+    // 会員一覧(/api/users)は管理者のみ取得可のため、初期ロードでは取得しない。
+    // 会員詳細はクリック時に /api/users/[id] を、招待者編集は編集開始時に取得する。
+    fetch(`/api/events/${id}`).then(r => r.json()).then(ev => {
       if (ev.id) setEvent(ev)
-      if (Array.isArray(us)) setAllUsers(us)
       setLoading(false)
     })
   }, [status, session, id, router])
@@ -567,13 +568,11 @@ export default function EventDetailPage() {
       </div>
 
       {/* 会員詳細モーダル */}
-      {selectedUserId && (() => {
-        const u = allUsers.find(x => x.id === selectedUserId)
-        if (!u) return null
-        if (u.role === 'guest') return null
+      {selectedUserId && popupUser && (() => {
+        const u = popupUser
         const sns = Object.entries(u.snsLinks ?? {}).filter(([, v]) => v) as [string, string][]
         return (
-          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setSelectedUserId(null)}>
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => { setSelectedUserId(null); setPopupUser(null) }}>
             <div className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
@@ -586,7 +585,7 @@ export default function EventDetailPage() {
                       <p className="text-slate-400 text-sm">{u.company ?? ''}{u.jobTitle ? ` · ${u.jobTitle}` : ''}</p>
                     </div>
                   </div>
-                  <button onClick={() => setSelectedUserId(null)} className="text-slate-400 hover:text-white text-xl leading-none">×</button>
+                  <button onClick={() => { setSelectedUserId(null); setPopupUser(null) }} className="text-slate-400 hover:text-white text-xl leading-none">×</button>
                 </div>
                 <div className="space-y-1.5 mb-3 pb-3 border-b border-brand-navy-700 text-xs">
                   {u.email && (

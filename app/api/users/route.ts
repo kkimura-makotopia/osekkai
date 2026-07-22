@@ -1,18 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth } from '@/lib/apiAuth'
+import { requireAuth, forbidden } from '@/lib/apiAuth'
 
 export async function GET(req: NextRequest) {
   const auth = await requireAuth()
   if ('error' in auth) return auth.error
   const { user: viewer } = auth
 
-  // ?me=1 のときは自分1件だけ返す（プロフィール画面の高速化）
+  // ?me=1 のときは自分1件だけ返す（全ロール可・自分の情報のみ）
   const { searchParams } = new URL(req.url)
   if (searchParams.get('me') === '1') {
     const me = await prisma.user.findUnique({ where: { id: viewer.id } })
     return NextResponse.json(me)
   }
+
+  // 会員一覧（全件）の取得は運営管理者のみ
+  if (viewer.role !== 'admin') return forbidden()
 
   const users = await prisma.user.findMany({
     where: { isActive: true },
@@ -29,16 +32,6 @@ export async function GET(req: NextRequest) {
     },
     orderBy: { createdAt: 'asc' },
   })
-
-  // ゲスト閲覧者には他会員の識別情報を落として返す（自分以外を匿名化）
-  if (viewer.role === 'guest') {
-    const anon = users.map(u =>
-      u.id === viewer.id
-        ? u
-        : { ...u, fullName: '匿名', name: null, company: null, email: '', image: null, bio: null, businessSummary: null, snsLinks: {} }
-    )
-    return NextResponse.json(anon)
-  }
   return NextResponse.json(users)
 }
 
