@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { requireAuth } from '@/lib/apiAuth'
 
 export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.dbUserId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireAuth()
+  if ('error' in auth) return auth.error
   // 一覧では重い issuePdfData を返さない
   const events = await prisma.communityEvent.findMany({
     select: {
@@ -23,9 +22,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.dbUserId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (session.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const auth = await requireAuth({ roles: ['admin'] })
+  if ('error' in auth) return auth.error
+  const { user } = auth
 
   const { title, heldAt, location, description, inviteeIds, issuePdfData, issuePdfName } = await req.json()
   if (!title || !heldAt) return NextResponse.json({ error: 'title and heldAt required' }, { status: 400 })
@@ -36,7 +35,7 @@ export async function POST(req: NextRequest) {
       heldAt: new Date(heldAt),
       location,
       description,
-      createdBy: session.dbUserId,
+      createdBy: user.id,
       ...(issuePdfData !== undefined ? { issuePdfData } : {}),
       ...(issuePdfName !== undefined ? { issuePdfName } : {}),
       ...(Array.isArray(inviteeIds) && inviteeIds.length > 0

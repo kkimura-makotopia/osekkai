@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { analyzeToIssues } from '@/lib/ai'
+import { requireAuth } from '@/lib/apiAuth'
 
 // AI解析（保存はしない。レコメンドを返すだけ）
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.dbUserId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (session.role === 'guest') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const auth = await requireAuth({ roles: ['member', 'admin'] })
+  if ('error' in auth) return auth.error
+  const { user } = auth
 
   const { mode, sourceText, qaAnswers } = await req.json()
   if (mode !== 'text' && mode !== 'qa')
@@ -21,7 +20,7 @@ export async function POST(req: NextRequest) {
   if (mode === 'qa' && !qaPairs.some(x => x?.a && String(x.a).trim()))
     return NextResponse.json({ error: '質問に回答してください' }, { status: 400 })
 
-  const profile = await prisma.user.findUnique({ where: { id: session.dbUserId } })
+  const profile = await prisma.user.findUnique({ where: { id: user.id } })
   if (!profile) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
   try {

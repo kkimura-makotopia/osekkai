@@ -1,35 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { requireAuth, anonymizeUser } from '@/lib/apiAuth'
+
+const userSel = { id: true, fullName: true, name: true, company: true, image: true, role: true }
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions)
-  if (!session?.dbUserId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireAuth()
+  if ('error' in auth) return auth.error
+  const { user } = auth
+
   const event = await prisma.communityEvent.findUnique({
     where: { id: params.id },
     include: {
       creator: { select: { id: true, fullName: true, name: true, company: true, image: true } },
-      invitees: {
-        include: { user: { select: { id: true, fullName: true, name: true, company: true, image: true } } },
-      },
+      invitees: { include: { user: { select: userSel } } },
       feedbacks: {
         include: {
-          fromUser: { select: { id: true, fullName: true, name: true, company: true, image: true, role: true } },
-          toUser: { select: { id: true, fullName: true, name: true, company: true, image: true, role: true } },
+          fromUser: { select: userSel },
+          toUser: { select: userSel },
         },
         orderBy: { createdAt: 'desc' },
       },
     },
   })
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  return NextResponse.json(event)
+
+  // ゲスト匿名化（おせっかいの from/to、招待者）
+  const result = {
+    ...event,
+    invitees: event.invitees.map(iv => ({ ...iv, user: anonymizeUser(user.role, user.id, iv.user) })),
+    feedbacks: event.feedbacks.map(f => ({
+      ...f,
+      fromUser: anonymizeUser(user.role, user.id, f.fromUser),
+      toUser: anonymizeUser(user.role, user.id, f.toUser),
+    })),
+  }
+  return NextResponse.json(result)
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions)
-  if (!session?.dbUserId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (session.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const auth = await requireAuth({ roles: ['admin'] })
+  if ('error' in auth) return auth.error
 
   try {
     await prisma.communityEvent.delete({ where: { id: params.id } })
@@ -42,9 +53,8 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions)
-  if (!session?.dbUserId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (session.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const auth = await requireAuth({ roles: ['admin'] })
+  if ('error' in auth) return auth.error
   const body = await req.json()
 
   const updated = await prisma.$transaction(async tx => {

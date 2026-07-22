@@ -1,28 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { requireAuth } from '@/lib/apiAuth'
 
 const ALLOWED_ROLES = ['admin', 'member', 'guest'] as const
 type AllowedRole = (typeof ALLOWED_ROLES)[number]
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions)
-  if (!session?.dbUserId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (session.role !== 'admin' && session.dbUserId !== params.id)
+  const auth = await requireAuth()
+  if ('error' in auth) return auth.error
+  const { user } = auth
+  const isAdmin = user.role === 'admin'
+  if (!isAdmin && user.id !== params.id)
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const body = await req.json()
 
-  if (body.role !== undefined && session.role === 'admin' && !ALLOWED_ROLES.includes(body.role)) {
+  if (body.role !== undefined && isAdmin && !ALLOWED_ROLES.includes(body.role)) {
     return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
   }
 
   const updated = await prisma.user.update({
     where: { id: params.id },
     data: {
-      ...(body.role !== undefined && session.role === 'admin' ? { role: body.role as AllowedRole } : {}),
-      ...(body.isActive !== undefined && session.role === 'admin' ? { isActive: body.isActive } : {}),
+      ...(body.role !== undefined && isAdmin ? { role: body.role as AllowedRole } : {}),
+      ...(body.isActive !== undefined && isAdmin ? { isActive: body.isActive } : {}),
       ...(body.fullName !== undefined ? { fullName: body.fullName } : {}),
       ...(body.company !== undefined ? { company: body.company } : {}),
       ...(body.jobTitle !== undefined ? { jobTitle: body.jobTitle } : {}),
@@ -32,10 +33,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions)
-  if (!session?.dbUserId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (session.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  if (session.dbUserId === params.id) {
+  const auth = await requireAuth({ roles: ['admin'] })
+  if ('error' in auth) return auth.error
+  const { user } = auth
+  if (user.id === params.id) {
     return NextResponse.json({ error: '自分自身は削除できません' }, { status: 400 })
   }
 

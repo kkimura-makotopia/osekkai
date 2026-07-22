@@ -53,17 +53,24 @@ export const authOptions: NextAuthOptions = {
         token.role = dbUser.role
       }
 
-      // セッション確認のたびにDBから最新ロールを反映
-      // （運営によるステータス変更を、再ログインなしで画面更新時に反映するため）
+      // セッション確認のたびにDBから最新の状態を反映
+      // - 運営によるロール変更を再ログインなしで反映
+      // - ユーザー削除/無効化を検知したらトークンを失効（強制ログアウト）
       if (token.dbUserId) {
         try {
           const current = await prisma.user.findUnique({
             where: { id: token.dbUserId as string },
-            select: { role: true },
+            select: { role: true, isActive: true },
           })
-          if (current) token.role = current.role
+          if (!current || !current.isActive) {
+            token.error = 'UserDeleted'
+            delete token.dbUserId
+            delete token.role
+          } else {
+            token.role = current.role
+          }
         } catch (e) {
-          console.error('ロール再取得に失敗', e)
+          console.error('ユーザー状態の再取得に失敗', e)
         }
       }
 

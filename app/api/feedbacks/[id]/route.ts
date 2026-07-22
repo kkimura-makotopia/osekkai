@@ -1,35 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { requireAuth, anonymizeUser } from '@/lib/apiAuth'
 
 const ALLOWED_TYPES = ['intro', 'advice', 'other', 'feedback'] as const
 type AllowedType = (typeof ALLOWED_TYPES)[number]
 
+const userSel = { id: true, fullName: true, name: true, company: true, image: true, role: true }
+
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions)
-  if (!session?.dbUserId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireAuth()
+  if ('error' in auth) return auth.error
+  const { user } = auth
 
   const fb = await prisma.feedback.findUnique({
     where: { id: params.id },
     include: {
-      fromUser: { select: { id: true, fullName: true, name: true, company: true, image: true, role: true } },
-      toUser: { select: { id: true, fullName: true, name: true, company: true, image: true, role: true } },
+      fromUser: { select: userSel },
+      toUser: { select: userSel },
       event: { select: { id: true, title: true, heldAt: true } },
     },
   })
   if (!fb) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  return NextResponse.json(fb)
+  return NextResponse.json({
+    ...fb,
+    fromUser: anonymizeUser(user.role, user.id, fb.fromUser),
+    toUser: anonymizeUser(user.role, user.id, fb.toUser),
+  })
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions)
-  if (!session?.dbUserId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireAuth()
+  if ('error' in auth) return auth.error
+  const { user } = auth
 
   try {
     const existing = await prisma.feedback.findUnique({ where: { id: params.id } })
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    if (existing.fromUserId !== session.dbUserId && session.role !== 'admin') {
+    if (existing.fromUserId !== user.id && user.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -48,8 +55,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         ...(body.content !== undefined ? { content: String(body.content).trim() } : {}),
       },
       include: {
-        fromUser: { select: { id: true, fullName: true, name: true, company: true, image: true } },
-        toUser: { select: { id: true, fullName: true, name: true, company: true, image: true } },
+        fromUser: { select: userSel },
+        toUser: { select: userSel },
       },
     })
     return NextResponse.json(updated)
@@ -61,12 +68,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions)
-  if (!session?.dbUserId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireAuth()
+  if ('error' in auth) return auth.error
+  const { user } = auth
 
   const existing = await prisma.feedback.findUnique({ where: { id: params.id } })
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  if (existing.fromUserId !== session.dbUserId && session.role !== 'admin') {
+  if (existing.fromUserId !== user.id && user.role !== 'admin') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 

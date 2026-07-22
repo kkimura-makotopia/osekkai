@@ -53,6 +53,7 @@ function AdminIssuesInner() {
   const [eventFilter, setEventFilter] = useState('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [viewMode, setViewMode] = useState<'submission' | 'issue'>('submission')
 
   useEffect(() => {
     if (status === 'unauthenticated') { router.push('/login'); return }
@@ -83,6 +84,14 @@ function AdminIssuesInner() {
     const s = submissions.find(x => x.user.id === userParam)
     return s ? (s.user.fullName ?? s.user.name ?? '対象の会員') : '対象の会員'
   }, [submissions, userParam])
+
+  // 課題単位（個々の課題をフラットに展開。カテゴリ絞り込みも個別に適用）
+  const flatIssues = useMemo(() =>
+    filtered.flatMap(s =>
+      s.issues
+        .filter(i => categoryFilter === 'all' || i.category === categoryFilter)
+        .map(i => ({ issue: i, submissionId: s.id, user: s.user, event: s.event }))
+    ), [filtered, categoryFilter])
 
   const totalIssues = filtered.reduce((n, s) => n + s.issues.length, 0)
   const selectedCount = filtered.filter(s => selected.has(s.id)).length
@@ -170,8 +179,20 @@ function AdminIssuesInner() {
         </select>
       </div>
 
-      {/* 選択ツールバー */}
-      {filtered.length > 0 && (
+      {/* 表示切替タブ */}
+      <div className="flex gap-2 mb-4">
+        <button onClick={() => setViewMode('submission')}
+          className={`px-4 py-1.5 rounded-lg text-sm font-medium ${viewMode === 'submission' ? 'bg-brand-sky text-white' : 'bg-brand-navy-800 text-slate-300 border border-brand-navy-700'}`}>
+          提出単位（会社ごと）
+        </button>
+        <button onClick={() => setViewMode('issue')}
+          className={`px-4 py-1.5 rounded-lg text-sm font-medium ${viewMode === 'issue' ? 'bg-brand-sky text-white' : 'bg-brand-navy-800 text-slate-300 border border-brand-navy-700'}`}>
+          課題単位（1件ずつ）
+        </button>
+      </div>
+
+      {/* 選択ツールバー（提出単位のみ） */}
+      {viewMode === 'submission' && filtered.length > 0 && (
         <div className="flex flex-wrap items-center gap-3 mb-6 bg-brand-navy-800 border border-brand-navy-700 rounded-xl px-4 py-3">
           <button onClick={toggleAllFiltered}
             className="text-sm text-brand-sky-400 hover:text-brand-sky font-medium">
@@ -185,54 +206,91 @@ function AdminIssuesInner() {
         </div>
       )}
 
-      {filtered.length === 0 ? (
-        <div className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-10 text-center">
-          <p className="text-slate-400">該当する経営課題はありません。</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {filtered.map(sub => {
-            const checked = selected.has(sub.id)
-            return (
-              <div key={sub.id}
-                className={`bg-brand-navy-800 border rounded-2xl p-5 transition-colors ${checked ? 'border-brand-sky' : 'border-brand-navy-700'}`}>
-                <div className="flex items-start gap-3 mb-3">
-                  <input type="checkbox" checked={checked} onChange={() => toggle(sub.id)}
-                    className="w-4 h-4 accent-brand-sky mt-1 shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-white font-medium truncate">
-                      {sub.user.fullName ?? sub.user.name ?? '不明'}
-                      {sub.user.company && <span className="text-slate-400 font-normal">・{sub.user.company}</span>}
-                    </p>
-                    <p className="text-slate-500 text-xs">
-                      {sub.event.title}（{new Date(sub.event.heldAt).toLocaleDateString('ja-JP')}）
-                      <span className="ml-2 px-1.5 py-0.5 rounded-full bg-brand-navy-700 text-slate-300">{MODE_LABELS[sub.mode]}</span>
-                    </p>
-                  </div>
-                  <Link href={`/issues/${sub.id}`} className="text-brand-sky-400 hover:text-brand-sky text-xs shrink-0">詳細・編集</Link>
-                </div>
-                <div className="space-y-3">
-                  {sub.issues.map(issue => (
-                    <div key={issue.id} className="bg-brand-navy-900/40 border border-brand-navy-700 rounded-xl p-3">
-                      <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-sky/15 text-brand-sky-400 border border-brand-sky/30">
-                          {issue.category}
-                        </span>
-                        {issue.requestType && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                            {issue.requestType}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-white text-sm font-medium">{issue.summary}</p>
-                      {issue.detail && <p className="text-slate-400 text-xs whitespace-pre-wrap mt-1">{issue.detail}</p>}
+      {viewMode === 'submission' ? (
+        filtered.length === 0 ? (
+          <div className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-10 text-center">
+            <p className="text-slate-400">該当する経営課題はありません。</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filtered.map(sub => {
+              const checked = selected.has(sub.id)
+              return (
+                <div key={sub.id}
+                  className={`bg-brand-navy-800 border rounded-2xl p-5 transition-colors ${checked ? 'border-brand-sky' : 'border-brand-navy-700'}`}>
+                  <div className="flex items-start gap-3 mb-3">
+                    <input type="checkbox" checked={checked} onChange={() => toggle(sub.id)}
+                      className="w-4 h-4 accent-brand-sky mt-1 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-white font-medium truncate">
+                        {sub.user.fullName ?? sub.user.name ?? '不明'}
+                        {sub.user.company && <span className="text-slate-400 font-normal">・{sub.user.company}</span>}
+                      </p>
+                      <p className="text-slate-500 text-xs">
+                        {sub.event.title}（{new Date(sub.event.heldAt).toLocaleDateString('ja-JP')}）
+                        <span className="ml-2 px-1.5 py-0.5 rounded-full bg-brand-navy-700 text-slate-300">{MODE_LABELS[sub.mode]}</span>
+                      </p>
                     </div>
-                  ))}
+                    <Link href={`/issues/${sub.id}`} className="text-brand-sky-400 hover:text-brand-sky text-xs shrink-0">詳細・編集</Link>
+                  </div>
+                  <div className="space-y-3">
+                    {sub.issues.map(issue => (
+                      <div key={issue.id} className="bg-brand-navy-900/40 border border-brand-navy-700 rounded-xl p-3">
+                        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-sky/15 text-brand-sky-400 border border-brand-sky/30">
+                            {issue.category}
+                          </span>
+                          {issue.requestType && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                              {issue.requestType}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-white text-sm font-medium">{issue.summary}</p>
+                        {issue.detail && <p className="text-slate-400 text-xs whitespace-pre-wrap mt-1">{issue.detail}</p>}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+        )
+      ) : (
+        // 課題単位
+        flatIssues.length === 0 ? (
+          <div className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-10 text-center">
+            <p className="text-slate-400">該当する経営課題はありません。</p>
+          </div>
+        ) : (
+          <div>
+            <p className="text-slate-500 text-xs mb-2">{flatIssues.length} 件の課題</p>
+            <div className="space-y-3">
+              {flatIssues.map(({ issue, submissionId, user, event }) => (
+                <div key={issue.id} className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-4">
+                  <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-sky/15 text-brand-sky-400 border border-brand-sky/30">
+                      {issue.category}
+                    </span>
+                    {issue.requestType && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                        {issue.requestType}
+                      </span>
+                    )}
+                    <Link href={`/issues/${submissionId}`} className="ml-auto text-brand-sky-400 hover:text-brand-sky text-xs shrink-0">詳細・編集</Link>
+                  </div>
+                  <p className="text-white text-sm font-medium">{issue.summary}</p>
+                  {issue.detail && <p className="text-slate-400 text-xs whitespace-pre-wrap mt-1">{issue.detail}</p>}
+                  <p className="text-slate-500 text-xs mt-2 pt-2 border-t border-brand-navy-700">
+                    {user.fullName ?? user.name ?? '不明'}{user.company ? `・${user.company}` : ''}
+                    <span className="mx-1.5">／</span>
+                    {event.title}（{new Date(event.heldAt).toLocaleDateString('ja-JP')}）
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
       )}
     </div>
   )

@@ -1,27 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { sendCommentNotification } from '@/lib/email'
+import { requireAuth, anonymizeUser } from '@/lib/apiAuth'
+
+const userSel = { id: true, fullName: true, name: true, company: true, image: true, role: true }
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions)
-  if (!session?.dbUserId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireAuth()
+  if ('error' in auth) return auth.error
+  const { user } = auth
 
   const comments = await prisma.feedbackComment.findMany({
     where: { feedbackId: params.id },
-    include: {
-      user: { select: { id: true, fullName: true, name: true, company: true, image: true, role: true } },
-    },
+    include: { user: { select: userSel } },
     orderBy: { createdAt: 'asc' },
   })
-  return NextResponse.json(comments)
+  const result = comments.map(c => ({ ...c, user: anonymizeUser(user.role, user.id, c.user) }))
+  return NextResponse.json(result)
 }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions)
-  if (!session?.dbUserId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (session.role === 'guest') return NextResponse.json({ error: 'ゲストはコメントできません' }, { status: 403 })
+  const auth = await requireAuth({ roles: ['member', 'admin'] })
+  if ('error' in auth) return auth.error
+  const { user: me } = auth
 
   try {
     const { content } = await req.json()
@@ -39,33 +40,23 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     })
     if (!fb) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-    // コメント投稿者（通知本文の差出人として使う）
-    const me = await prisma.user.findUnique({
-      where: { id: session.dbUserId },
+    const meUser = await prisma.user.findUnique({
+      where: { id: me.id },
       select: { id: true, fullName: true, name: true, role: true },
     })
 
     const created = await prisma.feedbackComment.create({
-      data: {
-        feedbackId: params.id,
-        userId: session.dbUserId,
-        content: String(content).trim(),
-      },
-      include: {
-        user: { select: { id: true, fullName: true, name: true, company: true, image: true, role: true } },
-      },
+      data: { feedbackId: params.id, userId: me.id, content: String(content).trim() },
+      include: { user: { select: userSel } },
     })
 
-    // 通知メール（fromUser と toUser に。コメント投稿者本人は除外）
-    const commenterName = me?.role === 'guest' ? '匿名' : (me?.fullName ?? me?.name ?? 'おせっ会メンバー')
+    const commenterName = meUser?.role === 'guest' ? '匿名' : (meUser?.fullName ?? meUser?.name ?? 'おせっ会メンバー')
     const excerpt = fb.content.length > 200 ? fb.content.slice(0, 200) + '…' : fb.content
 
     const notifyTargets = [fb.fromUser, fb.toUser]
-      .filter(u => u.id !== session.dbUserId && !!u.email)
-      // 同じユーザーへの重複通知を避ける
+      .filter(u => u.id !== me.id && !!u.email)
       .filter((u, i, arr) => arr.findIndex(x => x.id === u.id) === i)
 
-    // メール送信は非同期で投げっぱなし（コメント作成自体は成功させる）
     await Promise.allSettled(
       notifyTargets.map(u =>
         sendCommentNotification({

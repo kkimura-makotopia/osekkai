@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { requireAuth } from '@/lib/apiAuth'
 
 const userSelect = {
   id: true, fullName: true, name: true, company: true, image: true, role: true,
@@ -25,14 +24,15 @@ function sanitizeIssues(raw: unknown) {
 
 // 一覧。?scope=all は管理者のみ全件。それ以外は自分の提出のみ。
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.dbUserId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireAuth()
+  if ('error' in auth) return auth.error
+  const { user } = auth
 
   const { searchParams } = new URL(req.url)
-  const all = searchParams.get('scope') === 'all' && session.role === 'admin'
+  const all = searchParams.get('scope') === 'all' && user.role === 'admin'
 
   const submissions = await prisma.issueSubmission.findMany({
-    where: all ? {} : { userId: session.dbUserId },
+    where: all ? {} : { userId: user.id },
     include: {
       user: { select: userSelect },
       event: { select: eventSelect },
@@ -45,9 +45,9 @@ export async function GET(req: NextRequest) {
 
 // 提出（1ユーザー×1イベントで upsert。再提出は上書き）
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.dbUserId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (session.role === 'guest') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const auth = await requireAuth({ roles: ['member', 'admin'] })
+  if ('error' in auth) return auth.error
+  const { user } = auth
 
   const { eventId, mode, sourceText, qaAnswers, issues } = await req.json()
   if (!eventId) return NextResponse.json({ error: 'eventId required' }, { status: 400 })
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
   if (cleanIssues.length === 0)
     return NextResponse.json({ error: '課題を1件以上入力してください' }, { status: 400 })
 
-  const userId = session.dbUserId
+  const userId = user.id
   const data = {
     mode,
     sourceText: mode === 'text' ? (sourceText ?? null) : null,
