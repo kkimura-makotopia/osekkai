@@ -9,13 +9,16 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   if ('error' in auth) return auth.error
   const { user } = auth
 
+  // 必要な列だけを取得（issuePdfData/minutesText/aiSummary などの重い列は返さない）
   const event = await prisma.communityEvent.findUnique({
     where: { id: params.id },
-    include: {
+    select: {
+      id: true, title: true, heldAt: true, location: true, description: true, createdBy: true,
       creator: { select: { id: true, fullName: true, name: true, company: true, image: true } },
-      invitees: { include: { user: { select: userSel } } },
+      invitees: { select: { user: { select: userSel } } },
       feedbacks: {
-        include: {
+        select: {
+          id: true, type: true, content: true, createdAt: true, eventId: true,
           fromUser: { select: userSel },
           toUser: { select: userSel },
         },

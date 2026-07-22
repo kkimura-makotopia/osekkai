@@ -110,6 +110,7 @@ model Feedback {
 
   comments   FeedbackComment[]
 
+  @@index([eventId])
   @@map("feedbacks")
 }
 
