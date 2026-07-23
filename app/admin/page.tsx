@@ -3,6 +3,9 @@ import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { REVENUE_RANGES } from '@/lib/profileOptions'
+import { JOB_TITLES } from '@/lib/jobTitles'
+import { ISSUE_CATEGORIES } from '@/lib/issueOptions'
 
 interface UserRow {
   id: string
@@ -11,14 +14,30 @@ interface UserRow {
   company: string | null
   image: string | null
   role: string
+  jobTitle: string | null
+  employeeCount: number | null
+  recentRevenue: string | null
   createdAt: string
+}
+interface FeedbackRow { id: string; fromUser: { id: string } }
+interface SubmissionRow { id: string; issues: { category: string }[] }
+
+// 年商レンジの代表値（万円）— 平均計算・並び順に使用
+const REVENUE_MID_MAN = [500, 2000, 4000, 7500, 20000, 65000, 200000, 650000, 3000000, 7500000, 15000000]
+const REVENUE_MID: Record<string, number> = Object.fromEntries(REVENUE_RANGES.map((r, i) => [r, REVENUE_MID_MAN[i]]))
+
+const formatMan = (v: number) => {
+  if (v <= 0) return '—'
+  if (v >= 10000) return `約${(v / 10000).toFixed(v / 10000 >= 10 ? 0 : 1)}億円`
+  return `約${Math.round(v).toLocaleString()}万円`
 }
 
 export default function AdminPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [users, setUsers] = useState<UserRow[]>([])
-  const [feedbackCount, setFeedbackCount] = useState(0)
+  const [feedbacks, setFeedbacks] = useState<FeedbackRow[]>([])
+  const [submissions, setSubmissions] = useState<SubmissionRow[]>([])
   const [eventCount, setEventCount] = useState(0)
   const [loaded, setLoaded] = useState(false)
 
@@ -42,10 +61,12 @@ export default function AdminPage() {
       safeJson('/api/users'),
       safeJson('/api/events'),
       safeJson('/api/feedbacks'),
-    ]).then(([us, evs, fbs]) => {
+      safeJson('/api/issues?scope=all'),
+    ]).then(([us, evs, fbs, subs]) => {
       if (Array.isArray(us)) setUsers(us)
       if (Array.isArray(evs)) setEventCount(evs.length)
-      if (Array.isArray(fbs)) setFeedbackCount(fbs.length)
+      if (Array.isArray(fbs)) setFeedbacks(fbs)
+      if (Array.isArray(subs)) setSubmissions(subs)
       setLoaded(true)
     })
   }, [status, session, router])
@@ -60,9 +81,44 @@ export default function AdminPage() {
   const memberCount = roleCounts.member ?? 0
   const guestCount = roleCounts.guest ?? 0
 
+  // 平均年商規模
+  const usersWithRev = users.filter(u => u.recentRevenue && REVENUE_MID[u.recentRevenue] != null)
+  const avgRevenueMan = usersWithRev.length
+    ? usersWithRev.reduce((s, u) => s + REVENUE_MID[u.recentRevenue!], 0) / usersWithRev.length
+    : 0
+
+  // 平均従業員数
+  const usersWithEmp = users.filter(u => typeof u.employeeCount === 'number')
+  const avgEmp = usersWithEmp.length
+    ? Math.round(usersWithEmp.reduce((s, u) => s + (u.employeeCount ?? 0), 0) / usersWithEmp.length)
+    : 0
+
+  // 役職別割合
+  const jobDist = [...JOB_TITLES, '未設定'].map(job => ({
+    label: job,
+    value: users.filter(u => (u.jobTitle ?? '未設定') === job).length,
+  })).filter(d => d.value > 0)
+
+  // 経営課題（登録数・カテゴリ割合）
+  const allIssues = submissions.flatMap(s => s.issues)
+  const issueCount = allIssues.length
+  const categoryDist = ISSUE_CATEGORIES.map(cat => ({
+    label: cat,
+    value: allIssues.filter(i => i.category === cat).length,
+  })).filter(d => d.value > 0)
+
+  // 企業年商別のおせっかいを出した数（送信者の年商レンジ別）
+  const userById = new Map(users.map(u => [u.id, u]))
+  const revenueBuckets = [...REVENUE_RANGES, '未設定']
+  const feedbackByRevenue = revenueBuckets.map(bucket => ({
+    label: bucket,
+    value: feedbacks.filter(f => (userById.get(f.fromUser.id)?.recentRevenue ?? '未設定') === bucket).length,
+  })).filter(d => d.value > 0)
+
   const kpis = [
     { label: '交流会', value: eventCount, icon: '🤝', color: 'from-emerald-600 to-emerald-400', link: '/admin/events' },
-    { label: 'おせっかい', value: feedbackCount, icon: '💬', color: 'from-amber-600 to-amber-400', link: '/feedbacks' },
+    { label: 'おせっかい', value: feedbacks.length, icon: '💬', color: 'from-amber-600 to-amber-400', link: '/feedbacks' },
+    { label: '経営課題登録数', value: issueCount, icon: '📝', color: 'from-brand-navy to-brand-sky', link: '/admin/issues' },
   ]
 
   return (
@@ -97,7 +153,7 @@ export default function AdminPage() {
       </Link>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
         {kpis.map(kpi => (
           <Link key={kpi.label} href={kpi.link}
             className={`bg-gradient-to-br ${kpi.color} rounded-2xl p-5 block hover:scale-105 transition-transform`}
@@ -108,6 +164,64 @@ export default function AdminPage() {
           </Link>
         ))}
       </div>
+
+      {/* 平均値カード */}
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <StatCard label="会員の平均年商規模" value={formatMan(avgRevenueMan)} sub={`${usersWithRev.length}名の登録から算出`} />
+        <StatCard label="会員の平均従業員数" value={usersWithEmp.length ? `${avgEmp.toLocaleString()}名` : '—'} sub={`${usersWithEmp.length}名の登録から算出`} />
+      </div>
+
+      {/* 分布 */}
+      <div className="grid md:grid-cols-2 gap-4">
+        <DistCard title="会員の役職別の割合" items={jobDist} total={jobDist.reduce((s, d) => s + d.value, 0)} unit="名" color="bg-brand-sky" />
+        <DistCard title="経営課題のカテゴリ割合" items={categoryDist} total={issueCount} unit="件" color="bg-emerald-500" />
+        <DistCard title="企業年商別のおせっかいを出した数" items={feedbackByRevenue} total={feedbacks.length} unit="件" color="bg-amber-500" className="md:col-span-2" />
+      </div>
+    </div>
+  )
+}
+
+function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-5">
+      <div className="text-slate-400 text-sm">{label}</div>
+      <div className="text-2xl sm:text-3xl font-bold text-white mt-1">{value}</div>
+      {sub && <div className="text-slate-500 text-xs mt-1">{sub}</div>}
+    </div>
+  )
+}
+
+function DistCard({ title, items, total, unit, color, className = '' }: {
+  title: string
+  items: { label: string; value: number }[]
+  total: number
+  unit: string
+  color: string
+  className?: string
+}) {
+  return (
+    <div className={`bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-5 ${className}`}>
+      <h3 className="text-white font-medium mb-4">{title}</h3>
+      {items.length === 0 ? (
+        <p className="text-slate-500 text-sm">データがありません。</p>
+      ) : (
+        <div className="space-y-3">
+          {items.map(d => {
+            const pct = total ? Math.round((d.value / total) * 100) : 0
+            return (
+              <div key={d.label}>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-slate-300">{d.label}</span>
+                  <span className="text-slate-400">{d.value}{unit}（{pct}%）</span>
+                </div>
+                <div className="h-2 bg-brand-navy-700 rounded-full overflow-hidden">
+                  <div className={`h-full ${color} rounded-full`} style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

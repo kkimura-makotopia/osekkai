@@ -85,13 +85,13 @@ type FbTab = 'received' | 'sent'
 interface FbField { key: string; label: string; textarea?: boolean; required?: boolean; placeholder?: string }
 const FB_FIELDS: Record<string, FbField[]> = {
   intro: [
-    { key: 'company', label: '会社名', required: true, placeholder: '例: 株式会社〇〇' },
-    { key: 'name', label: '氏名', required: true, placeholder: '例: 山田 太郎' },
+    { key: 'company', label: '紹介したい企業の会社名', required: true, placeholder: '例：株式会社XX' },
+    { key: 'name', label: '紹介したい企業に所属する担当者名', required: true, placeholder: '例：おせっかい 太郎' },
     { key: 'reason', label: '紹介理由', textarea: true, required: true, placeholder: 'なぜこの方を紹介したいか' },
     { key: 'url', label: 'URL', placeholder: 'https://...' },
   ],
   feedback: [
-    { key: 'service', label: '会社（サービス）名', placeholder: '例: 〇〇（サービス名）' },
+    { key: 'service', label: '会社（サービス）名', required: true, placeholder: '例: 〇〇（サービス名）' },
     { key: 'reason', label: '紹介理由', textarea: true, required: true, placeholder: 'なぜこのサービスを紹介したいか' },
     { key: 'url', label: 'URL', placeholder: 'https://...' },
   ],
