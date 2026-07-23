@@ -71,8 +71,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
     })
     return NextResponse.json({ success: true })
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
     console.error('user DELETE failed:', err)
-    return NextResponse.json({ error: `削除に失敗: ${msg}` }, { status: 500 })
+    return NextResponse.json({ error: '削除に失敗しました' }, { status: 500 })
   }
 }

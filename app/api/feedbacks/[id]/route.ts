@@ -61,9 +61,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     })
     return NextResponse.json(updated)
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
     console.error('feedbacks PATCH failed', err)
-    return NextResponse.json({ error: `更新に失敗: ${msg}` }, { status: 500 })
+    return NextResponse.json({ error: '更新に失敗しました' }, { status: 500 })
   }
 }
 

@@ -49,9 +49,8 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
     await prisma.communityEvent.delete({ where: { id: params.id } })
     return new NextResponse(null, { status: 204 })
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
     console.error('event DELETE failed:', err)
-    return NextResponse.json({ error: `削除に失敗: ${msg}` }, { status: 500 })
+    return NextResponse.json({ error: '削除に失敗しました' }, { status: 500 })
   }
 }
 

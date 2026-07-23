@@ -72,8 +72,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     return NextResponse.json(created, { status: 201 })
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
     console.error('comment POST failed:', err)
-    return NextResponse.json({ error: `投稿に失敗: ${msg}` }, { status: 500 })
+    return NextResponse.json({ error: '投稿に失敗しました' }, { status: 500 })
   }
 }

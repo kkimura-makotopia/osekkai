@@ -15,20 +15,22 @@ export function LoginClient() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-navy-950 via-brand-navy to-brand-navy-900 px-4">
       <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-10 w-full max-w-md shadow-2xl text-center">
         <div className="mb-8">
-          <Image
-            src="/osekkai-logo.png"
-            alt="おせっ会 OSEKKAI"
-            width={160}
-            height={160}
-            className="mx-auto mb-4"
-            priority
-          />
-          <span className="inline-block text-xs bg-brand-sky/20 border border-brand-sky/40 text-brand-sky-400 rounded-full px-3 py-1 mb-3">
-            完全招待制コミュニティ
-          </span>
+          <div className="inline-flex items-center justify-center bg-white rounded-2xl p-4 mb-4 shadow-lg">
+            <Image
+              src="/osekkai-logo.png"
+              alt="おせっ会 OSEKKAI"
+              width={140}
+              height={140}
+              priority
+            />
+          </div>
+          <div>
+            <span className="inline-block text-xs bg-brand-sky/20 border border-brand-sky/40 text-brand-sky-400 rounded-full px-3 py-1 mb-3">
+              完全招待制コミュニティ
+            </span>
+          </div>
           <p className="text-slate-200 text-sm leading-relaxed">
-            経営課題を持ち寄り、<br />
-            解決アクションが生まれるコミュニティ
+            日本一、経営課題が解決されるコミュニティ
             <br />
             <span className="text-white font-bold">「おせっ会」</span>
           </p>
@@ -49,8 +51,9 @@ export function LoginClient() {
         </button>
 
         <p className="text-blue-200/80 text-xs mt-6 leading-relaxed">
-          ログイン後は閲覧のみ可能です。<br />
-          運営の認証後よりご利用いただけます。
+          ログイン直後は会員ステータスが<strong className="text-slate-100">「ゲスト」</strong>になり閲覧のみ可能です。事務局の承認後<strong className="text-slate-100">「正会員」</strong>になり、経営課題の提出やおせっかい一覧の氏名表示ができるようになります。
+          <br />
+          <strong className="text-slate-100">「ゲスト」</strong>でログインした後に、事務局までお声がけください。
         </p>
       </div>
     </div>
