@@ -20,7 +20,20 @@ interface UserRow {
   createdAt: string
 }
 interface FeedbackRow { id: string; fromUser: { id: string } }
-interface SubmissionRow { id: string; issues: { category: string }[] }
+interface SubmissionRow {
+  id: string
+  user: { id: string; fullName: string | null; name: string | null; role: string }
+  issues: { category: string }[]
+}
+
+// 集計から除外する運営スタッフの姓 ＋ ゲスト
+const EXCLUDED_SURNAMES = ['木村', '間宮', '堤', '眞嶋', '真嶋']
+const isExcluded = (u: { role?: string | null; fullName?: string | null; name?: string | null } | null | undefined) => {
+  if (!u) return true
+  if (u.role === 'guest') return true
+  const n = `${u.fullName ?? ''}${u.name ?? ''}`
+  return EXCLUDED_SURNAMES.some(s => n.includes(s))
+}
 
 // 年商レンジの代表値（万円）— 平均計算・並び順に使用
 const REVENUE_MID_MAN = [500, 2000, 4000, 7500, 20000, 65000, 200000, 650000, 3000000, 7500000, 15000000]
@@ -81,14 +94,18 @@ export default function AdminPage() {
   const memberCount = roleCounts.member ?? 0
   const guestCount = roleCounts.guest ?? 0
 
+  // 集計対象の会員（運営スタッフ・ゲストを除外）
+  const statUsers = users.filter(u => !isExcluded(u))
+  const userById = new Map(users.map(u => [u.id, u]))
+
   // 平均年商規模
-  const usersWithRev = users.filter(u => u.recentRevenue && REVENUE_MID[u.recentRevenue] != null)
+  const usersWithRev = statUsers.filter(u => u.recentRevenue && REVENUE_MID[u.recentRevenue] != null)
   const avgRevenueMan = usersWithRev.length
     ? usersWithRev.reduce((s, u) => s + REVENUE_MID[u.recentRevenue!], 0) / usersWithRev.length
     : 0
 
   // 平均従業員数
-  const usersWithEmp = users.filter(u => typeof u.employeeCount === 'number')
+  const usersWithEmp = statUsers.filter(u => typeof u.employeeCount === 'number')
   const avgEmp = usersWithEmp.length
     ? Math.round(usersWithEmp.reduce((s, u) => s + (u.employeeCount ?? 0), 0) / usersWithEmp.length)
     : 0
@@ -96,23 +113,23 @@ export default function AdminPage() {
   // 役職別割合
   const jobDist = [...JOB_TITLES, '未設定'].map(job => ({
     label: job,
-    value: users.filter(u => (u.jobTitle ?? '未設定') === job).length,
+    value: statUsers.filter(u => (u.jobTitle ?? '未設定') === job).length,
   })).filter(d => d.value > 0)
 
-  // 経営課題（登録数・カテゴリ割合）
-  const allIssues = submissions.flatMap(s => s.issues)
+  // 経営課題（登録数・カテゴリ割合）— 提出者が対象会員のもののみ
+  const allIssues = submissions.filter(s => !isExcluded(s.user)).flatMap(s => s.issues)
   const issueCount = allIssues.length
   const categoryDist = ISSUE_CATEGORIES.map(cat => ({
     label: cat,
     value: allIssues.filter(i => i.category === cat).length,
   })).filter(d => d.value > 0)
 
-  // 企業年商別のおせっかいを出した数（送信者の年商レンジ別）
-  const userById = new Map(users.map(u => [u.id, u]))
+  // 企業年商別のおせっかいを出した数（送信者が対象会員のもののみ）
+  const eligibleFeedbacks = feedbacks.filter(f => !isExcluded(userById.get(f.fromUser.id)))
   const revenueBuckets = [...REVENUE_RANGES, '未設定']
   const feedbackByRevenue = revenueBuckets.map(bucket => ({
     label: bucket,
-    value: feedbacks.filter(f => (userById.get(f.fromUser.id)?.recentRevenue ?? '未設定') === bucket).length,
+    value: eligibleFeedbacks.filter(f => (userById.get(f.fromUser.id)?.recentRevenue ?? '未設定') === bucket).length,
   })).filter(d => d.value > 0)
 
   const kpis = [
@@ -175,7 +192,7 @@ export default function AdminPage() {
       <div className="grid md:grid-cols-2 gap-4">
         <DistCard title="会員の役職別の割合" items={jobDist} total={jobDist.reduce((s, d) => s + d.value, 0)} unit="名" color="bg-brand-sky" />
         <DistCard title="経営課題のカテゴリ割合" items={categoryDist} total={issueCount} unit="件" color="bg-emerald-500" />
-        <DistCard title="企業年商別のおせっかいを出した数" items={feedbackByRevenue} total={feedbacks.length} unit="件" color="bg-amber-500" className="md:col-span-2" />
+        <DistCard title="企業年商別のおせっかいを出した数" items={feedbackByRevenue} total={eligibleFeedbacks.length} unit="件" color="bg-amber-500" className="md:col-span-2" />
       </div>
     </div>
   )

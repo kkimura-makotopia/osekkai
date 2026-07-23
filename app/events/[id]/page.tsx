@@ -91,7 +91,7 @@ const FB_FIELDS: Record<string, FbField[]> = {
     { key: 'url', label: 'URL', placeholder: 'https://...' },
   ],
   feedback: [
-    { key: 'service', label: '会社（サービス）名', required: true, placeholder: '例: 〇〇（サービス名）' },
+    { key: 'service', label: '紹介したい会社（サービス）名', required: true, placeholder: '例：株式会社XX（サービス名）' },
     { key: 'reason', label: '紹介理由', textarea: true, required: true, placeholder: 'なぜこのサービスを紹介したいか' },
     { key: 'url', label: 'URL', placeholder: 'https://...' },
   ],
