@@ -1,18 +1,22 @@
 # おせっ会 (OSEKKAI) 引き継ぎ書
 
-最終更新: 2026-06-10
+最終更新: 2026-07-24
+
+> このファイルと `prisma/schema.prisma` を最初に読めば全体像を把握できます。
+> 直近のやり取りは `git log --oneline -30` を参照してください。
 
 ---
 
 ## 1. プロジェクト概要
 
 - **名称**: おせっ会 (OSEKKAI)
-- **目的**: 経営課題を持ち寄り解決アクションを生む、完全招待制の経営者コミュニティ
+- **目的**: 経営課題を持ち寄り、解決アクション（アドバイス・成功事例・人脈/サービス紹介）を生む、完全招待制の経営者コミュニティ
 - **公開URL**: https://osekkai.vercel.app
-- **GitHub**: https://github.com/kkimura-makotopia/osekkai
+- **GitHub**: https://github.com/kkimura-makotopia/osekkai （main へ push で Vercel 自動デプロイ）
 - **本番DB**: Supabase (PostgreSQL)
 - **ホスティング**: Vercel
 - **メール**: Resend (`k.kimura@makotopia.com` から送信)
+- **AI**: Anthropic Claude（経営課題の解析）
 
 ---
 
@@ -22,341 +26,247 @@
 |---|---|
 | フレームワーク | Next.js 14.2.16 (App Router) |
 | 言語 | TypeScript |
-| スタイル | Tailwind CSS（ブランドカラー `brand-navy` / `brand-sky` カスタム定義） |
-| ORM | Prisma 7.7.0 |
+| スタイル | Tailwind CSS（`brand-navy` / `brand-sky` カスタムカラー） |
+| UI | Radix UI, lucide-react（アイコン） |
+| ORM | Prisma 7.7.0（`@prisma/adapter-pg` + `pg` プール） |
 | DB | PostgreSQL (Supabase) |
-| 認証 | NextAuth.js + Google OAuth |
+| 認証 | NextAuth.js 4 + Google OAuth（JWTセッション） |
 | メール | Resend SDK 4.0 |
-| デプロイ | Vercel (auto-deploy on git push) |
+| AI | `@anthropic-ai/sdk`（モデル `claude-sonnet-4-6`、tool useで構造化出力） |
+| デプロイ | Vercel |
 
 ---
 
 ## 3. 環境変数
 
-`.env.local`（ローカル）と Vercel の Environment Variables 両方に以下が必要:
+`.env.local`（ローカル、gitignore済）と Vercel の Environment Variables 両方に必要:
 
 | Key | 用途 | 備考 |
 |---|---|---|
-| `DATABASE_URL` | Supabase 接続文字列 | Pooler URI (port 5432 か 6543) |
+| `DATABASE_URL` | Supabase 接続文字列 | Pooler URI（同時接続対策で6543推奨） |
 | `NEXTAUTH_URL` | 本番 URL | `https://osekkai.vercel.app` |
-| `NEXTAUTH_SECRET` | JWT 署名キー | ローカル/本番別の値 |
-| `GOOGLE_CLIENT_ID` | Google OAuth | |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth | |
+| `NEXTAUTH_SECRET` | JWT署名/暗号鍵 | ローカル/本番別 |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth | |
 | `RESEND_API_KEY` | Resend API | `re_...` |
 | `EMAIL_FROM` | 送信元 | `おせっ会 <k.kimura@makotopia.com>` |
+| `ANTHROPIC_API_KEY` | **経営課題のAI解析** | `sk-ant-...`（未設定だとAI抽出がエラー） |
 
-### Google OAuth Redirect URI（追加済み）
-```
-https://osekkai.vercel.app/api/auth/callback/google
-```
+Google OAuth Redirect URI（追加済）: `https://osekkai.vercel.app/api/auth/callback/google`
 
 ---
 
-## 4. ロール構成
+## 4. ⚠️ DBマイグレーション運用（最重要・事故注意）
 
-3ロール。`lib/auth.ts` の `BOOTSTRAP_ADMIN_EMAILS` で `k.kimura@makotopia.com` を起動時に自動 admin 化。
+**Prisma migrate は使っていません。スキーマ変更は Supabase SQL Editor で手動実行**します。SQLは `prisma/migrations_manual/*.sql` に保存。
+
+**手順（順序厳守）**:
+1. スキーマ変更を含む場合は **先に Supabase で ALTER/CREATE を実行**
+2. その後 `git push`（Vercelデプロイ）
+
+> ❗ **順序を逆にすると本番が壊れます**。例: カラムをschemaに足して先にデプロイすると、`jwt`コールバックのユーザー取得クエリが存在しないカラムを参照して失敗し、**全員ログイン不可（error=Callback）**になります（過去に発生）。ADD COLUMN 等は後方互換なので**SQLを先に流せば安全**。
+
+**未実行だと問題が出る主なSQL（新環境/未反映なら要確認）**:
+- `2026-06-10_management_issues.sql` — issue_submissions / management_issues テーブル＋issue_mode enum
+- `2026-06-11_add_request_type.sql` — management_issues.requestType
+- `2026-07-01_issue_mode_manual.sql` — issue_mode に 'manual' 追加
+- `2026-07-07_add_business_summary.sql` — users.businessSummary
+- `2026-07-23_feedbacks_eventid_index.sql` — feedbacks(eventId) インデックス
+
+Vercelビルド失敗時: **Use existing Build Cache のチェックを外して Redeploy**。
+
+---
+
+## 5. ロール構成
+
+3ロール。`lib/auth.ts` の `BOOTSTRAP_ADMIN_EMAILS`（`k.kimura@makotopia.com`）を起動時に自動admin化。
 
 | ロール | 内部値 | 権限 |
 |---|---|---|
-| 運営管理者 | `admin` | 全機能。会員管理・交流会管理・おせっかい削除 |
-| 正会員 | `member` | 標準ユーザー、メンバーの実名閲覧可 |
-| ゲスト | `guest` | 承認待ち。他メンバーは匿名表示 |
+| 運営管理者 | `admin` | 全機能 |
+| 正会員 | `member` | 標準。実名閲覧・おせっかい/コメント/経営課題の作成可 |
+| ゲスト | `guest` | 承認待ち。閲覧のみ。**他会員は匿名表示**（作成系すべて不可） |
 
-新規 Google ログインユーザーは `guest` で作成され、運営が会員管理画面で昇格させる。
+- 新規Googleログインは `guest` で作成 → 運営が会員管理画面で昇格
+- **ロール変更は再ログイン不要**：`jwt`コールバックが毎回DBから最新roleを取得。画面更新（またはタブ復帰）で反映
+- **削除/無効化ユーザーは即失効**：APIは毎回DB実在チェック（401）＋クライアントは`SessionGuard`で自動signOut
 
 ---
 
-## 5. データモデル (`prisma/schema.prisma`)
+## 6. データモデル (`prisma/schema.prisma`)
 
 主要モデル:
-
-- `User` — プロフィール情報全般（後述の新規8+1項目を含む）
-- `CommunityEvent` — 交流会
+- `User` — プロフィール全般。**`bio`=経歴・プロフィール / `businessSummary`=事業内容サマリ**（自己紹介を2分割）
+- `CommunityEvent` — 交流会（旧 issuePdfData/minutesText/aiSummary カラムは残置だがAPIで返さない）
 - `EventInvitee` — 交流会の招待者（多対多中間）
-- `Feedback` — おせっかい本体
+- `Feedback` — おせっかい本体（`@@index([eventId])`）
 - `FeedbackComment` — おせっかいへのコメント
-- `ReferralLink` — 紹介リンク（現UIからは到達不能だがDBには残置）
+- `IssueSubmission` — 経営課題の提出単位（1ユーザー×1イベントでupsert。`@@unique([userId,eventId])`）
+- `ManagementIssue` — 個々の経営課題（提出に2〜3件ぶら下がる）
+- `ReferralLink` — （旧・未使用。モデルのみ残置）
 
-主要な `onDelete: Cascade` ルール:
-- User削除 → 作成した交流会・送受信おせっかい・紹介リンク・コメントが全て cascade 削除
-- Event削除 → 招待・おせっかい・コメントが cascade 削除
+`onDelete: Cascade`: User削除 → 作成イベント・送受信おせっかい・コメント・経営課題提出が cascade。
 
-### User モデルのプロフィール項目一覧（公開/非公開区分）
-
-`lib/publicFields.ts` の `PUBLIC_FIELDS` で公開項目を定義。他は非公開（自分と運営管理者のみ可視）。
-
-**公開項目（おせっかい一覧で氏名クリック時に表示）:**
-- `email`
-- `fullName` (氏名)
-- `company` (会社名)
-- `jobTitle` (役職, dropdown / `lib/jobTitles.ts`)
-- `industry` (業界, dropdown / `lib/industries.ts`)
-- `employeeCount` (従業員数)
-- `foundingYear` (設立年)
-- `recentRevenue` (直近の確定している期の売上, dropdown / `REVENUE_RANGES`)
-- `serviceUnitPrice` (サービス平均単価, テキスト)
-- `bio` (自己紹介)
-- `snsLinks` (SNS: X/Facebook/Webサイト)
-
-**非公開項目:**
-- `fiscalMonth` (決算月, 1-12)
-- `targetRevenueScale` (メイン商材ターゲット売上規模, `REVENUE_RANGES`)
-- `marketingChannels` (マーケチャネル, チェックボックス複数選択 / `MARKETING_CHANNELS`)
-- `fullTimeEmployees` (正社員数, テキスト)
-- `branchCount` (拠点数, テキスト)
-- `operatingMargin` (営業利益率, dropdown / `OPERATING_MARGINS`)
-- `serviceBreakdown` (売上構成比, 動的リスト `[{name,percentage}]`)
-- `customerCount` (顧客数, テキスト)
-- `revenueGrowth` (3年前からの売上成長率, dropdown / `REVENUE_GROWTH_RATES`)
-- `revenueTarget3y` (3年後の売上目標, dropdown / `REVENUE_RANGES`)
-- `referralTemplate` (旧紹介リンク用テンプレ、現UIからは削除)
+### 公開/非公開（`lib/publicFields.ts` の `PUBLIC_FIELDS`）
+**公開**: fullName, company, jobTitle, industry, employeeCount, foundingYear, serviceUnitPrice, bio, businessSummary, snsLinks, email
+**非公開**（自分と運営のみ）: fiscalMonth, targetRevenueScale, marketingChannels, fullTimeEmployees(数値), branchCount(数値), operatingMargin, serviceBreakdown, customerCount, revenueGrowth, revenueTarget3y, **recentRevenue（※途中で公開→非公開に変更）**
+- 単価/顧客数はドロップダウン、正社員数/拠点数は数値入力（`lib/profileOptions.ts` に選択肢）
 
 ---
 
-## 6. 主要ページ
+## 7. 経営課題 提出フォーム（今セッションの目玉機能）
 
-| パス | 概要 |
-|---|---|
-| `/login` | Googleログイン |
-| `/onboarding` | 初回登録（氏名・会社・役職・業界・従業員数を必須） |
-| `/mypage` | プロフィール編集（デフォルトで編集モード開）|
-| `/events` | 交流会一覧（ゲスト/正会員/管理者で挙動同じ） |
-| `/events/[id]` | 交流会詳細（ゲストは `/events` にリダイレクト） |
-| `/admin` | ダッシュボード（会員数・交流会・おせっかい件数） |
-| `/admin/members` | 会員管理（ロール変更・物理削除） |
-| `/admin/events` | 交流会管理（作成・編集・削除） |
-| `/feedbacks` | おせっかい一覧（タブ・絞り込み3種） |
-| `/feedbacks/[id]` | おせっかい詳細・コメント |
-| `/help` | 使い方ヘルプ |
+**目的**: 正会員が経営課題を2〜3件提出 → おせっ会（4名テーブル）で発表 → 他の経営者からアドバイス・紹介を獲得。
 
-### `/help` （ヘッダの ? アイコン）に表示するセクション
-- 権限について
-- おせっかいを送る流れ
-- プロフィールの編集
-- その他（運営許可制の説明）
+### フロー（`/issues/new` ウィザード・5ステップ）
+1. **イベント・形式**: 提出先イベント（本日以降のみ）＋入力形式を選択。既提出イベントには上書き警告。
+2. **プロフィール**: マイページと同項目（共有コンポーネント `components/profile/ProfileFieldsForm.tsx`）。既存値を補完、保存でマイページにも反映。自己紹介/SNSは非表示。
+3. **入力・AI解析**: 進捗バー付き。
+4. **内容の確認・編集**: AI抽出をカード編集（最大3件）。💡「おせっかいを多く獲得するヒント」ポップアップ。
+5. **提出する最新版を確認**: A4提出シート（`components/issues/SubmissionPreview.tsx`）で確認 → 運営に提出。
+- 提出後も `/issues` → `/issues/[id]` で編集可（編集も確認画面を経て再提出）。タブ切替時の入力消失防止のため初期読込は `loadedRef` で一度だけ。
+
+### 3つの入力形式（`Mode = 'text' | 'qa' | 'manual'`）
+- **① テキスト形式**: 現状視点。自由記述 → AIが課題抽出
+- **② 質疑応答形式**: 未来視点（3年後から逆算）。**15問**を1問ずつ回答（スキップ不可、各問にグレーの回答例）→ AI抽出
+- **③ 自分で作成する**: AIなし。空カードに直接入力（issue_mode に 'manual' 追加済）
+
+### AI（`lib/ai.ts`）
+- `analyzeToIssues()` が Claude(`claude-sonnet-4-6`) を tool use で呼び、構造化課題を返す
+- プロンプト方針: **評論禁止**。他の経営者から引き出す「質問・依頼」形に。**回答者を属性で絞り込まない**（誰でも答えられる余白）。プロフィール（非公開含む）を文脈に利用。
+
+### 課題の構造（`lib/issueOptions.ts`）
+- `category`（`ISSUE_CATEGORIES`: 事業/マーケティング/営業/経営/組織/採用/財務/その他）
+- `requestType`（**6種別**: 原因分析型/打ち手探索型/意思決定型/アイデア探索型/人脈紹介型/経営相談型。`REQUEST_TYPE_INFO` に定義・期待回答・例）
+- `summary`（タイトル＝おせっ会で一目で分かる一文）／`detail`（背景・具体的に聞きたいこと/紹介依頼）
+- ※`requestType` は文字列カラム。旧値（ヒアリング/依頼）が残っていても表示・編集可（編集画面で「旧・要変更」として選択肢に出す）
+
+### 管理者側（`/admin/issues`）
+- **提出単位（会社ごと）** と **課題単位（1件ずつ）** のタブ切替
+- イベント/カテゴリ/会員（`?user=<id>`）で絞り込み
+- チェックボックス＋全選択＋**「PDF化」**（選択提出を印刷ウィンドウでA4化→ブラウザでPDF保存）
+- 会員管理の各行「経営課題」ボタンから `?user=` で該当会員の課題へ遷移
+
+### 使い方ヘルプ
+- `/help/issues`（7ステップ・スクショ入り。画像は `public/guide/2_issue-click.png`〜`6_issue-edit.png`）。`/help` からリンク。
 
 ---
 
-## 7. おせっかい機能
+## 8. おせっかい機能
 
-### Feedback 種類（FB_LABELS）
-`FB_TYPE_OPTIONS = ['intro', 'feedback', 'advice', 'other']`
+### 種類（FB_TYPE_OPTIONS = intro / feedback / advice / other）
+知人の紹介 / サービスの紹介 / ナレッジの共有 / その他
 
-| 内部値 | 表示 | カラー |
-|---|---|---|
-| intro | 知人の紹介 | 青系 |
-| feedback | サービスの紹介 | 緑系 |
-| advice | ナレッジの共有 | 紫系 |
-| other | その他 | グレー系 |
-
-### おせっかい一覧 `/feedbacks` の絞り込み（3つすべてドロップダウン）
-1. 種類 (`FbFilter`)
-2. 交流会 (`eventFilter`)
-3. おせっかいした人 (`senderFilter` — 表示中のおせっかいの fromUser から自動抽出)
+### 送信フォーム（`/events/[id]`「おせっかいを送る」）
+- **種類ごとに入力項目が変化**（`FB_FIELDS`）。内容は `【ラベル】値` 形式で1本文に結合して保存:
+  - 知人の紹介: 紹介したい企業の会社名* / 担当者名* / 紹介理由* / URL
+  - サービスの紹介: 紹介したい会社（サービス）名* / 紹介理由* / URL
+  - ナレッジの共有: お相手の課題* / ナレッジ内容* / 参考URL
+  - その他: 自由入力
+- **送信後は送り先を保持しフォームは開いたまま**（続けて送れる）
+- 表示は `components/feedback/FeedbackContent.tsx`：**ラベルを【】強調・URLをリンク化**（一覧では長いURLを末尾…に短縮）。旧「ラベル：値」データも自動整形。
 
 ### コメント
-- スキーマ: `FeedbackComment` モデル
-- 詳細ページ `/feedbacks/[id]` で投稿・閲覧
-- 投稿時に **Resend で fromUser と toUser にメール通知**（投稿者本人は除外、ゲストは送信者表示で「匿名」）
-- `lib/email.ts` の `sendCommentNotification` 経由
-- メールには `${NEXTAUTH_URL}/feedbacks/${id}` への遷移ボタン
-
-### 削除権限
-- 自分の投稿は本人または管理者
-- 管理者は全件削除可（API: `/api/feedbacks/[id]` DELETE）
-- 管理者は全コメントを削除可（API: `/api/feedbacks/comments/[id]` DELETE）
+- `/feedbacks/[id]` で投稿。投稿時に fromUser/toUser へ Resend メール通知（`lib/email.ts`、ゲスト投稿者は「匿名」）
+- **ゲストはコメント不可**（UIは案内文＋API 403）
 
 ---
 
-## 8. ゲスト匿名化ルール
+## 9. セキュリティ（今セッションで大幅強化）
 
-ゲストは認証待ちでメンバーの実名・詳細を見られないよう、`shouldHide(u)` で判定:
+### 認可の一元化: `lib/apiAuth.ts`
+- `requireAuth({ roles? })` を**全APIルートで使用**。処理:
+  1. セッション検証（NextAuthの暗号化JWE。exp/署名OK）
+  2. **DBでユーザー実在＋isActive を確認** → 削除/無効化トークンを失効（401）
+  3. `roles` 指定でスコープ判定（範囲外は403）
+- `shouldHideUser()` / `anonymizeUser()` で**ゲスト向け氏名匿名化をサーバー側**で実施（feedbacks/events/comments の from/to）
 
-```ts
-const shouldHide = (u) => {
-  if (u.id === myId) return false        // 自分は常に表示
-  return viewerIsGuest || u.role === 'guest'  // 閲覧者がゲスト OR 表示対象がゲスト
-}
-```
+### アクセスポリシー（要点）
+- `GET /api/users`（会員一覧）= **管理者のみ**。`?me=1`（自分）は全ロール可
+- `GET /api/users/[id]` = 会員1名の公開プロフィール（氏名クリックのポップアップ用。非公開対象は403）。一覧を配らずポップアップを維持する設計
+- `GET /api/issues?scope=all` = 管理者のみ。会員は自分の提出のみ
+- 作成系（おせっかい/コメント/経営課題/イベント作成）はロール制限。イベント系CRUDは管理者
+- 詳細な権限表は Excel `API一覧` を参照（ユーザー保有）
 
-3画面のユーザー詳細ポップアップで適用:
-- `/feedbacks/page.tsx`
-- `/feedbacks/[id]/page.tsx`
-- `/events/[id]/page.tsx`
+### その他
+- レスポンスヘッダ（`next.config.mjs`）: CSP / HSTS / X-Frame-Options(DENY) / X-Content-Type-Options / Referrer-Policy / Permissions-Policy
+- セッション有効期限 **7日**（`lib/auth.ts`）
+- 500エラーで**例外メッセージをクライアントに返さない**（汎用文言＋サーバーログ）
+- SQLi/XSS面は小（Prisma・React・raw SQL/innerHTML/eval なし）
 
-`shouldHide` がtrueなら名前は「匿名」表示、クリック不可、ポップアップも開かない。
-
----
-
-## 9. 交流会機能の最新仕様
-
-- **PDFアップロード機能は削除済み**（旧 `issuePdfData` / `issuePdfName` カラムは残置）
-- 開催日時のタイムゾーンずれを修正済み: クライアントで `new Date(form.heldAt).toISOString()` してから送信
-- ゲストは `/events/[id]` にアクセスすると `/events` にリダイレクト
-- 「おせっかいを送る」ボタンは青CTAボタン
-- 招待者管理は管理者の create/edit フォームで複数選択
-
----
-
-## 10. 公開フラグ表示（マイページ）
-
-`lib/publicFields.ts` の `isPublicField(key)` で判定し、`<FieldLabel field="xxx">` 内でバッジ表示:
-
-```tsx
-<span className={isPublic ? 'bg-emerald-500/15 text-emerald-400 ...' : 'bg-slate-500/15 ...'}>
-  {isPublic ? '公開' : '非公開'}
-</span>
-```
+### 未対応（次の候補）
+- APIレート制限（特に `POST /api/issues/analyze` のAIコスト）
+- 監査ログ（ロール変更・削除の証跡）
+- 入力スキーマ検証（zod等）・最大長
+- RLS適用範囲（users/feedbacks等）と最小権限DBロール
+- CSRFトークン（現状 SameSite=Lax が主防御）
 
 ---
 
-## 11. デザインテーマ
+## 10. 管理者ダッシュボード（`/admin`）
 
-`tailwind.config.ts` のカスタムカラー:
-
-```ts
-brand: {
-  navy: '#0A2540',           // ロゴの濃紺
-  'navy-700': '#163A5F',
-  'navy-800': '#0F2D4D',
-  'navy-900': '#08203A',
-  'navy-950': '#061A30',
-  sky: '#1E9CE6',            // ロゴの明るいブルー
-  'sky-400': '#3FB1F0',
-  'sky-500': '#1E9CE6',
-  'sky-600': '#0F87CC',
-}
-```
-
-ロゴ画像: `public/osekkai-logo.png`
+- 会員数（ロール別）、交流会数、おせっかい数、**経営課題登録数**
+- **平均年商規模 / 平均従業員数 / 役職別割合 / 経営課題カテゴリ割合 / 企業年商別おせっかい数**
+- **分析系6指標は運営スタッフ（姓: 木村・間宮・堤・眞嶋）とゲストを除外**して算出（`EXCLUDED_SURNAMES` + `isExcluded`）。会員数バナー等の合計は全員分。
+- 年商レンジは代表値（万円）に変換して平均（`REVENUE_MID_MAN`）。※概算。
 
 ---
 
-## 12. DNS / メール設定
+## 11. パフォーマンス（交流会で30-40人同時接続対策）
 
-ドメイン: `makotopia.com`（GMO Internet Group / お名前.com 管理）
-DNS: お名前.com 標準DNS（`*.dnsv.jp`）
-
-Resend 用に追加済みのDNSレコード（**Verified**）:
-- `send` MX → `feedback-smtp.ap-northeast-1.amazonses.com` (priority 10)
-- `send` TXT → `v=spf1 include:amazonses.com ~all`
-- `resend._domainkey` TXT → 公開鍵 (`p=MIGfMA0...`)
-- `_dmarc` TXT → 既存の `v=DMARC1; p=none; rua=mailto:k.kimura@makotopia.com`
-
-既存の Google Workspace の MX/SPF/DKIM/DMARC はそのまま残置。Resend はサブドメイン `send.makotopia.com` 経由なので競合なし。
+- 済: `GET /api/events/[id]` を `select` 明示にして重い列（issuePdfData等）を返さない／`feedbacks(eventId)` インデックス
+- 次の候補: 送信後の全体再取得(reload)を楽観的更新に／DATABASE_URLを6543プーラーに／Vercel実行リージョンを東京(ap-northeast-1)に／レート制限
 
 ---
 
-## 13. デプロイ手順
+## 12. デザインテーマ
 
-### コード変更のみ:
-```powershell
-git add .
-git commit -m "..."
-git push origin main
-```
-→ Vercel が自動でビルド・デプロイ
-
-### スキーマ変更を含む場合:
-1. Supabase SQL Editor で必要な ALTER TABLE 実行
-2. `git push` でコードを反映
-3. Vercel ビルド完了を確認
-
-Vercel ビルドが失敗する場合: **Use existing Build Cache のチェックを外して Redeploy**。
+`tailwind.config.ts`: `brand.navy`(#0A2540)系 / `brand.sky`(#1E9CE6)系。ロゴ `public/osekkai-logo.png`（ログイン画面は白カード上に配置して視認性確保）。
 
 ---
 
-## 14. 最近のコミット履歴（参考）
-
-直近の主な変更:
-- 新プロフィール項目8つ＋3年後売上目標 追加、公開/非公開バッジ実装
-- メールアドレスをユーザー詳細ポップアップに表示
-- おせっかい一覧の絞り込みを3軸ドロップダウン化（種類・交流会・送信者）
-- おせっかいへのコメント機能 + メール通知
-- ヘッダ ? アイコンでヘルプページ表示
-- ロゴ画像 + 全体カラーをブランドトーンに統一
-- 経営課題 / アポリクエスト / 紹介リンク機能を削除（モデルは残置）
-- 交流会の PDF 機能削除、datetime タイムゾーン修正
-- 会員管理での物理削除（cascade FK）
-
----
-
-## 15. 既知の制約・残課題
-
-- `package.json` に `@anthropic-ai/sdk` が残置（コードから参照無し、削除可）
-- 旧 `linkToken` / `ReferralLink` などのテーブルがDBに残っている
-- `User.referralTemplate` カラムが残っているが現UIからは使われない
-- 旧 `issuePdfData` / `issuePdfName` / `minutesText` / `aiSummary` カラムが `CommunityEvent` に残置
-- 旧 `Feedback.linkToken` が残置
-- マイページの「閉じる」(編集モード非編集時)の表示UIは現状ほぼ何も表示しない設計（編集モードを開放したまま運用が前提）
-
----
-
-## 16. プロジェクト構成
+## 13. プロジェクト構成（抜粋）
 
 ```
-.
-├── app/
-│   ├── admin/                  # 管理者画面
-│   │   ├── events/             # 交流会管理
-│   │   ├── members/            # 会員管理
-│   │   └── page.tsx            # ダッシュボード
-│   ├── api/                    # APIルート
-│   │   ├── auth/               # NextAuth
-│   │   ├── events/             # 交流会CRUD
-│   │   ├── feedbacks/          # おせっかい+コメント
-│   │   ├── users/              # ユーザーCRUD
-│   │   └── referral/           # （旧）紹介リンク
-│   ├── events/                 # 交流会画面
-│   ├── feedbacks/              # おせっかい画面
-│   ├── help/                   # 使い方
-│   ├── invite/                 # （旧）招待リンク表示
-│   ├── login/                  # ログイン
-│   ├── mypage/                 # マイページ
-│   ├── onboarding/             # 初回登録
-│   ├── referral/               # （旧、未到達）
-│   ├── layout.tsx              # 共通レイアウト + ProfileGuard
-│   ├── page.tsx                # ルート（適切な画面へリダイレクト）
-│   └── providers.tsx           # SessionProvider
-├── components/
-│   ├── auth/
-│   │   ├── LoginClient.tsx     # ログインUI
-│   │   └── ProfileGuard.tsx    # プロフィール未入力ガード
-│   └── layout/
-│       └── Navbar.tsx          # ヘッダ
-├── lib/
-│   ├── auth.ts                 # NextAuth設定 + BOOTSTRAP_ADMIN_EMAILS
-│   ├── email.ts                # Resend経由のメール送信ユーティリティ
-│   ├── industries.ts           # 業界選択肢
-│   ├── jobTitles.ts            # 役職選択肢（会長/代表取締役/取締役/執行役員/CXO）
-│   ├── prisma.ts               # Prisma Client
-│   ├── profileOptions.ts       # 売上レンジ等の定数
-│   ├── publicFields.ts         # 公開フィールド定数
-│   └── utils.ts
-├── prisma/
-│   └── schema.prisma           # DBスキーマ
-├── public/
-│   └── osekkai-logo.png        # ロゴ
-├── types/
-│   └── next-auth.d.ts          # セッション型拡張
-├── next.config.mjs
-├── package.json
-├── tailwind.config.ts          # ブランドカラー定義
-└── tsconfig.json
+app/
+├── admin/{page.tsx, members, events, issues}   # ダッシュボード/会員/交流会/経営課題(管理)
+├── api/
+│   ├── auth/[...nextauth]
+│   ├── users/{route.ts, [id]/route.ts}         # GET一覧=admin, ?me=1=自分, [id]=公開プロフィール
+│   ├── events/{route.ts, [id]/route.ts}
+│   ├── feedbacks/{route, [id], [id]/comments, comments/[id]}
+│   └── issues/{route.ts, [id]/route.ts, analyze/route.ts}
+├── events/[id]                                  # 交流会詳細＋おせっかい送信
+├── feedbacks/{page, [id]}                       # おせっかい一覧/詳細
+├── issues/{page, new, [id]}                     # 経営課題 一覧/ウィザード/詳細編集
+├── help/{page, issues}
+├── mypage, onboarding, login, providers.tsx     # providersにSessionGuard
+components/
+├── auth/{LoginClient, ProfileGuard}
+├── profile/ProfileFieldsForm.tsx                # マイページ/ウィザード共有
+├── issues/{IssueCardsEditor, SubmissionPreview}
+├── feedback/FeedbackContent.tsx                 # 【】強調＋URLリンク化
+└── layout/Navbar.tsx
+lib/{auth, apiAuth, ai, email, prisma, publicFields, profileOptions, issueOptions, industries, jobTitles}
+prisma/{schema.prisma, migrations_manual/*.sql}
+public/{osekkai-logo.png, guide/*.png}
 ```
 
----
-
-## 17. 次のセッションへ
-
-このファイル `HANDOVER.md` と `prisma/schema.prisma` を最初に読めば全体像を把握できます。
-直近のやり取りは Git のコミット履歴 (`git log --oneline -20`) を参照してください。
-
-**進行中のタスクは特になし**。すべての要望が一通り反映済みの状態です。
+（削除済: 旧 `/referral`・`/invite` ページ、`/api/referral` 系）
 
 ---
 
-## 18. 連絡先
+## 14. 直近コミット（参考）
 
-- 運営管理者アカウント: `k.kimura@makotopia.com`
-- 送信元アドレス: 同上
+`git log --oneline -30` を参照。今セッションの主な流れ:
+経営課題機能の実装 → UX調整（種別/質問/ヒント/A4確認/スクロール等）→ recentRevenue非公開化・自己紹介2分割 → 会員管理(受/出・従業員数・売上規模・経営課題ボタン・CSV) → ロールバッジ削除・おせっかい項目構造化 → 【】表示・URLリンク → タブ復帰の入力保持 → セキュリティ(requireAuth・匿名化・強制ログアウト・課題単位タブ) → アクセスポリシー改定(users一覧admin限定・users/[id]追加・referral削除) → パフォーマンス(events select・index) → セキュリティヘッダ・例外サニタイズ・セッション7日・ログイン文言/ロゴ → ダッシュボード分析指標（スタッフ/ゲスト除外）。
+
+---
+
+## 15. 次のセッションへ / 進行中タスク
+
+- **進行中の未完タスクは特になし**（依頼は一通り反映済み）。
+- 着手時はまず「4. DBマイグレーション運用」を確認（未反映SQLがあれば先にSupabaseで実行）。
+- セキュリティの中位項目（レート制限・監査ログ・入力検証・RLS）は未対応。必要になれば着手。
+
+## 16. 連絡先
+- 運営管理者アカウント / 送信元: `k.kimura@makotopia.com`
