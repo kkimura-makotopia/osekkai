@@ -1,6 +1,7 @@
 経営課題提出フォームの使い方ページ（/help/issues）で表示するスクリーンショット。
 以下のファイル名で保存してください（PNG推奨）。
 
+  1_issue-login.png   … ①アプリのログイン画面
   2_issue-click.png   … ②ヘッダの「経営課題提出フォーム」ボタン
   3_issue-format.png  … ③イベント・形式の選択画面
   4_issue-profile.png … ④プロフィール入力画面

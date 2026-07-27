@@ -18,6 +18,7 @@ export default function IssuesHelpPage() {
       <div className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-6">
         <Step n={1} title="アプリにログイン">
           Googleアカウントでログインします。
+          <Shot src="/guide/1_issue-login.png" alt="ログイン画面" />
         </Step>
 
         <Step n={2} title="ヘッダの「経営課題提出フォーム」をクリック">
@@ -28,8 +29,8 @@ export default function IssuesHelpPage() {
         <Step n={3} title="イベント・形式を選ぶ">
           提出先のイベントを選び、3つの入力形式から1つを選びます。
           <ul className="mt-2 space-y-1.5 text-slate-300">
-            <li><strong className="text-white">① テキスト形式</strong>：現在視点で、事業の状況や悩みを自由に書いて課題を洗い出す</li>
-            <li><strong className="text-white">② 質疑応答形式</strong>：3年後のあるべき姿から逆算する未来視点。質問に1問ずつ回答</li>
+            <li><strong className="text-white">① テキスト形式</strong>：現在視点で、事業の状況や悩みを自由に書くと、<strong className="text-slate-200">AIが経営課題を提案します</strong></li>
+            <li><strong className="text-white">② 質疑応答形式</strong>：3年後のあるべき姿から逆算する未来視点。質問に1問ずつ回答すると、<strong className="text-slate-200">AIが経営課題を提案します</strong></li>
             <li><strong className="text-white">③ 自分で作成する</strong>：既に課題が明確な方向け。AIを使わず直接入力</li>
           </ul>
           <Shot src="/guide/3_issue-format.png" alt="イベント・形式の選択画面" />
@@ -37,6 +38,7 @@ export default function IssuesHelpPage() {
 
         <Step n={4} title="プロフィールを入力する">
           マイページと同じ項目です。入力済みの内容は自動で補完され、ここで修正するとマイページにも反映されます。<br />
+          <span className="text-amber-300">⚠️ プロフィールはAIが経営課題を提案する際の重要な情報源です。入力が不十分だと、AIの提案精度がかなり落ちてしまうため、できるだけ詳しく入力してください。</span><br />
           <span className="text-slate-400 text-xs">※「非公開」マークの項目は他の会員には表示されず、課題解析の精度向上にのみ使われます。</span>
           <Shot src="/guide/4_issue-profile.png" alt="プロフィール入力画面" />
         </Step>
@@ -48,7 +50,7 @@ export default function IssuesHelpPage() {
 
         <Step n={6} title="内容の確認・編集">
           AIの提案はあくまで下書きです。<strong className="text-slate-200">タイトルや内容は自由に編集</strong>してください（課題は最大3件）。<br />
-          右上の <span className="text-brand-sky-400">💡 おせっかいを多く獲得するヒント</span> も参考にしながら、一目で伝わる形に整えましょう。
+          右上の <a href="#tips" className="text-brand-sky-400 hover:text-brand-sky underline underline-offset-2">💡 おせっかいを多く獲得するヒント</a> も参考にしながら、一目で伝わる形に整えましょう。
           <Shot src="/guide/6_issue-edit.png" alt="内容の確認・編集画面" />
         </Step>
 
@@ -59,7 +61,7 @@ export default function IssuesHelpPage() {
       </div>
 
       {/* ヒント */}
-      <Section title="おせっかいを多く獲得するヒント" icon="💡">
+      <Section id="tips" title="おせっかいを多く獲得するヒント" icon="💡">
         <ul className="space-y-2 text-sm text-slate-300">
           <Hint>AIレコメンドは参考程度にしていただき、言い回しなどは是非変更してください！</Hint>
           <Hint>発表時間は8分なので、課題は2〜3件を推奨しています！</Hint>
@@ -89,9 +91,9 @@ function Shot({ src, alt }: { src: string; alt: string }) {
   )
 }
 
-function Section({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
+function Section({ id, title, icon, children }: { id?: string; title: string; icon: string; children: React.ReactNode }) {
   return (
-    <div className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-6 mt-6 mb-4">
+    <div id={id} className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-6 mt-6 mb-4 scroll-mt-24">
       <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
         <span>{icon}</span> {title}
       </h2>
