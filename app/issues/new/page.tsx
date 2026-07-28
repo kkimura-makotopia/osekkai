@@ -22,9 +22,9 @@ const TEXT_PLACEHOLDER = `例）
 それぞれの原因について課題を深堀りしてください。`
 
 const MODE_CARDS = [
-  { mode: 'text' as const, title: '① テキスト形式', desc: '事業進捗や伸び悩んでいることなど、現在視点で経営課題を洗い出したい方におすすめ' },
-  { mode: 'qa' as const, title: '② 質疑応答形式', desc: '3年後のあるべき姿から逆算する未来視点で経営課題を洗い出したい方におすすめ' },
-  { mode: 'manual' as const, title: '③ 自分で作成する', desc: '既に経営課題が明瞭で、淡々と入力したい方におすすめ' },
+  { mode: 'text' as const, title: '① テキスト形式', desc: '事業進捗や伸び悩んでいることなど、現在視点で入力すると、AIが経営課題を提案します', ai: true },
+  { mode: 'qa' as const, title: '② 質疑応答形式', desc: '3年後のあるべき姿から逆算する未来視点。質問に答えていくと、AIが経営課題を提案します', ai: true },
+  { mode: 'manual' as const, title: '③ 自分で作成する', desc: '既に経営課題が明瞭で、淡々と入力したい方におすすめ（AIは使いません）', ai: false },
 ]
 
 interface EventLite { id: string; title: string; heldAt: string }
@@ -265,12 +265,19 @@ function NewIssueWizard() {
             <div>
               <label className="text-white font-medium mb-2 block">入力形式</label>
               <div className="grid sm:grid-cols-3 gap-3">
-                {MODE_CARDS.map(({ mode: m, title, desc }) => (
+                {MODE_CARDS.map(({ mode: m, title, desc, ai }) => (
                   <button key={m} type="button" onClick={() => setMode(m)}
                     className={`text-left p-4 rounded-xl border transition-colors ${
                       mode === m ? 'border-brand-sky bg-brand-sky/10' : 'border-brand-navy-700 bg-brand-navy-900/40 hover:border-brand-sky/40'
                     }`}>
-                    <p className="text-white font-medium mb-1 text-sm">{title}</p>
+                    <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                      <p className="text-white font-medium text-sm">{title}</p>
+                      {ai && (
+                        <span className="inline-flex items-center gap-1 bg-brand-sky/20 text-brand-sky-400 text-[10px] font-medium px-1.5 py-0.5 rounded-full">
+                          🤖 AIが提案
+                        </span>
+                      )}
+                    </div>
                     <p className="text-slate-400 text-xs leading-relaxed">{desc}</p>
                   </button>
                 ))}

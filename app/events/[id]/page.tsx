@@ -85,12 +85,14 @@ type FbTab = 'received' | 'sent'
 interface FbField { key: string; label: string; textarea?: boolean; required?: boolean; placeholder?: string }
 const FB_FIELDS: Record<string, FbField[]> = {
   intro: [
+    { key: 'problem', label: 'お相手の課題', textarea: true, required: true, placeholder: '相手が抱えている課題' },
     { key: 'company', label: '紹介したい企業の会社名', required: true, placeholder: '例：株式会社XX' },
     { key: 'name', label: '紹介したい企業に所属する担当者名', required: true, placeholder: '例：おせっかい 太郎' },
     { key: 'reason', label: '紹介理由', textarea: true, required: true, placeholder: 'なぜこの方を紹介したいか' },
     { key: 'url', label: 'URL', placeholder: 'https://...' },
   ],
   feedback: [
+    { key: 'problem', label: 'お相手の課題', textarea: true, required: true, placeholder: '相手が抱えている課題' },
     { key: 'service', label: '紹介したい会社（サービス）名', required: true, placeholder: '例：株式会社XX（サービス名）' },
     { key: 'reason', label: '紹介理由', textarea: true, required: true, placeholder: 'なぜこのサービスを紹介したいか' },
     { key: 'url', label: 'URL', placeholder: 'https://...' },
@@ -99,6 +101,10 @@ const FB_FIELDS: Record<string, FbField[]> = {
     { key: 'problem', label: 'お相手の課題', textarea: true, required: true, placeholder: '相手が抱えている課題' },
     { key: 'knowledge', label: 'ナレッジ内容', textarea: true, required: true, placeholder: '共有したい知見・ノウハウ' },
     { key: 'url', label: '参考URL', placeholder: 'https://...' },
+  ],
+  other: [
+    { key: 'problem', label: 'お相手の課題', textarea: true, required: true, placeholder: '相手が抱えている課題' },
+    { key: 'content', label: '内容', textarea: true, required: true, placeholder: '応援メッセージなど' },
   ],
 }
 
@@ -244,7 +250,6 @@ export default function EventDetailPage() {
 
   // 種類ごとの入力を1つの content 文字列に組み立て
   const buildFbContent = () => {
-    if (fb.type === 'other') return fb.content.trim()
     return (FB_FIELDS[fb.type] ?? [])
       .map(d => ({ label: d.label, val: (fb.fields[d.key] ?? '').trim() }))
       .filter(x => x.val)
@@ -445,34 +450,26 @@ export default function EventDetailPage() {
                     ))}
                   </div>
                 </div>
-                {fb.type === 'other' ? (
-                  <div>
-                    <label className="text-slate-400 text-xs block mb-1">内容</label>
-                    <textarea required value={fb.content} onChange={e => setFb(p => ({ ...p, content: e.target.value }))}
-                      rows={8} className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 resize-y min-h-[180px]" />
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {(FB_FIELDS[fb.type] ?? []).map(f => (
-                      <div key={f.key}>
-                        <label className="text-slate-400 text-xs block mb-1">
-                          {f.label}{f.required && <span className="text-red-400 ml-0.5">*</span>}
-                        </label>
-                        {f.textarea ? (
-                          <textarea required={f.required} value={fb.fields[f.key] ?? ''}
-                            onChange={e => setFb(p => ({ ...p, fields: { ...p.fields, [f.key]: e.target.value } }))}
-                            rows={3} placeholder={f.placeholder}
-                            className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500 resize-y" />
-                        ) : (
-                          <input required={f.required} value={fb.fields[f.key] ?? ''}
-                            onChange={e => setFb(p => ({ ...p, fields: { ...p.fields, [f.key]: e.target.value } }))}
-                            placeholder={f.placeholder}
-                            className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-1.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500" />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <div className="space-y-3">
+                  {(FB_FIELDS[fb.type] ?? []).map(f => (
+                    <div key={f.key}>
+                      <label className="text-slate-400 text-xs block mb-1">
+                        {f.label}{f.required && <span className="text-red-400 ml-0.5">*</span>}
+                      </label>
+                      {f.textarea ? (
+                        <textarea required={f.required} value={fb.fields[f.key] ?? ''}
+                          onChange={e => setFb(p => ({ ...p, fields: { ...p.fields, [f.key]: e.target.value } }))}
+                          rows={3} placeholder={f.placeholder}
+                          className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500 resize-y" />
+                      ) : (
+                        <input required={f.required} value={fb.fields[f.key] ?? ''}
+                          onChange={e => setFb(p => ({ ...p, fields: { ...p.fields, [f.key]: e.target.value } }))}
+                          placeholder={f.placeholder}
+                          className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-1.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500" />
+                      )}
+                    </div>
+                  ))}
+                </div>
                 {fbSentMsg && <p className="text-emerald-400 text-xs">{fbSentMsg}</p>}
                 <div className="flex gap-2">
                   <button type="submit" disabled={savingFb} className="bg-brand-sky hover:bg-brand-sky-400 text-white px-4 py-1.5 rounded-lg text-sm disabled:opacity-60">
