@@ -127,6 +127,7 @@ export default function EventDetailPage() {
   const [fbSentMsg, setFbSentMsg] = useState('')
   const [fbTab, setFbTab] = useState<FbTab>('received')
   const [fbSearch, setFbSearch] = useState('')
+  const [fbListOpen, setFbListOpen] = useState(false)
 
   // 編集モード（運営管理者のみ）
   const [editing, setEditing] = useState(false)
@@ -260,6 +261,7 @@ export default function EventDetailPage() {
 
   const handleFbSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!fb.toUserId) { setFbSentMsg('⚠️ 送り先を選択してください'); return }
     const content = buildFbContent()
     if (!content) return
     setFbSentMsg('')
@@ -436,20 +438,35 @@ export default function EventDetailPage() {
               </div>
             ) : (
               <form onSubmit={handleFbSubmit} className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-4 space-y-3">
-                <div>
+                <div className="relative">
                   <label className="text-slate-400 text-xs block mb-1">送り先（招待者から選択）</label>
-                  <input type="text" value={fbSearch} onChange={e => setFbSearch(e.target.value)}
+                  <input type="text" value={fbSearch}
+                    onChange={e => { setFbSearch(e.target.value); setFbListOpen(true); setFb(p => ({ ...p, toUserId: '' })) }}
+                    onFocus={() => setFbListOpen(true)}
+                    onBlur={() => setTimeout(() => setFbListOpen(false), 150)}
                     placeholder="名前・会社名で検索..."
-                    className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-1.5 mb-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500" />
-                  <select required value={fb.toUserId} onChange={e => setFb(p => ({ ...p, toUserId: e.target.value }))}
-                    className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-blue-500">
-                    <option value="">選択...</option>
-                    {filteredFbTargets.map(u => (
-                      <option key={u.id} value={u.id}>{u.fullName ?? u.name} {u.company ? `(${u.company})` : ''}</option>
-                    ))}
-                  </select>
-                  {fbSearchQ && filteredFbTargets.length === 0 && (
-                    <p className="text-slate-500 text-xs mt-1">該当する招待者が見つかりません</p>
+                    autoComplete="off"
+                    className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-1.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500" />
+                  {fbListOpen && (
+                    <ul className="absolute z-20 mt-1 w-full max-h-56 overflow-auto bg-brand-navy-800 border border-brand-navy-600 rounded-lg shadow-xl">
+                      {filteredFbTargets.length === 0 ? (
+                        <li className="px-3 py-2 text-slate-500 text-sm">該当する招待者が見つかりません</li>
+                      ) : filteredFbTargets.map(u => (
+                        <li key={u.id}>
+                          <button type="button"
+                            onMouseDown={e => e.preventDefault()}
+                            onClick={() => {
+                              setFb(p => ({ ...p, toUserId: u.id }))
+                              setFbSearch(`${u.fullName ?? u.name ?? ''}${u.company ? ` (${u.company})` : ''}`)
+                              setFbListOpen(false)
+                            }}
+                            className={`w-full text-left px-3 py-2 text-sm transition-colors hover:bg-brand-navy-700 ${fb.toUserId === u.id ? 'bg-brand-sky/20 text-white' : 'text-slate-200'}`}>
+                            <span className="font-medium">{u.fullName ?? u.name}</span>
+                            {u.company && <span className="text-slate-400"> （{u.company}）</span>}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
                   )}
                 </div>
                 <div>
@@ -483,7 +500,7 @@ export default function EventDetailPage() {
                     </div>
                   ))}
                 </div>
-                {fbSentMsg && <p className="text-emerald-400 text-xs">{fbSentMsg}</p>}
+                {fbSentMsg && <p className={`text-xs ${fbSentMsg.startsWith('⚠️') ? 'text-red-400' : 'text-emerald-400'}`}>{fbSentMsg}</p>}
                 <div className="flex gap-2">
                   <button type="submit" disabled={savingFb} className="bg-brand-sky hover:bg-brand-sky-400 text-white px-4 py-1.5 rounded-lg text-sm disabled:opacity-60">
                     {savingFb ? '送信中...' : '送信'}

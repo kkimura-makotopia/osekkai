@@ -25,7 +25,7 @@ const PDF_CSS = `
 @page { size: A4; margin: 18mm; }
 * { box-sizing: border-box; }
 body { font-family: 'Hiragino Kaku Gothic ProN','Hiragino Sans','Yu Gothic','Meiryo',sans-serif; color:#1c2733; margin:0; font-size:12px; line-height:1.7; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-.sheet { page-break-after: always; }
+.sheet { page-break-after: always; min-height:255mm; display:flex; flex-direction:column; }
 .sheet:last-child { page-break-after: auto; }
 .head { display:flex; justify-content:space-between; align-items:flex-end; gap:24px; border-bottom:2px solid #0A2540; padding-bottom:14px; margin-bottom:24px; }
 .head-left { min-width:0; }
@@ -51,6 +51,11 @@ h2 .count { color:#6b7885; font-weight:400; letter-spacing:0; }
 .meta .dot { margin:0 8px; color:#9fb8cf; }
 .summary { font-weight:700; font-size:14px; color:#12213a; margin:0 0 6px; line-height:1.6; }
 .detail { color:#33414f; font-size:12px; white-space:pre-wrap; margin:0; line-height:1.8; }
+.memo { margin-top:auto; padding-top:20px; page-break-inside:avoid; }
+.memo-label { display:flex; align-items:center; gap:8px; font-size:11px; letter-spacing:2px; color:#0A2540; font-weight:700; margin-bottom:8px; }
+.memo-label::before { content:''; width:16px; height:2px; background:#1E9CE6; display:inline-block; }
+.memo-note { color:#6b7885; font-weight:400; letter-spacing:0; font-size:10px; }
+.memo-box { border:1px solid #c2ccd6; border-radius:4px; height:54px; }
 `
 
 // 依頼種別の補足説明（PDFで「〇〇型（…）」と表示）
@@ -165,6 +170,10 @@ function AdminIssuesInner() {
           </div>
           <h2>経営課題 <span class="count">（${s.issues.length}件）</span></h2>
           <div class="issues">${issues}</div>
+          <div class="memo">
+            <div class="memo-label">メモ <span class="memo-note">経営課題の発表時のメモを記載するのに使用ください</span></div>
+            <div class="memo-box"></div>
+          </div>
         </section>`
     }
 
