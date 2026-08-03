@@ -126,6 +126,7 @@ export default function EventDetailPage() {
   const [savingFb, setSavingFb] = useState(false)
   const [fbSentMsg, setFbSentMsg] = useState('')
   const [fbTab, setFbTab] = useState<FbTab>('received')
+  const [fbSearch, setFbSearch] = useState('')
 
   // 編集モード（運営管理者のみ）
   const [editing, setEditing] = useState(false)
@@ -283,6 +284,12 @@ export default function EventDetailPage() {
   const isAdmin = session?.role === 'admin'
   const inviteeUsers: InviteeUser[] = event.invitees.map(i => i.user)
   const fbTargets = inviteeUsers.filter(u => u.id !== session?.dbUserId)
+  const fbSearchQ = fbSearch.trim().toLowerCase()
+  const filteredFbTargets = fbSearchQ
+    ? fbTargets.filter(u =>
+        (u.fullName ?? u.name ?? '').toLowerCase().includes(fbSearchQ) ||
+        (u.company ?? '').toLowerCase().includes(fbSearchQ))
+    : fbTargets
 
   const receivedFbs = event.feedbacks.filter(f => f.toUser.id === session?.dbUserId)
   const sentFbs = event.feedbacks.filter(f => f.fromUser.id === session?.dbUserId)
@@ -431,13 +438,19 @@ export default function EventDetailPage() {
               <form onSubmit={handleFbSubmit} className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-4 space-y-3">
                 <div>
                   <label className="text-slate-400 text-xs block mb-1">送り先（招待者から選択）</label>
+                  <input type="text" value={fbSearch} onChange={e => setFbSearch(e.target.value)}
+                    placeholder="名前・会社名で検索..."
+                    className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-1.5 mb-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500" />
                   <select required value={fb.toUserId} onChange={e => setFb(p => ({ ...p, toUserId: e.target.value }))}
                     className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-blue-500">
                     <option value="">選択...</option>
-                    {fbTargets.map(u => (
+                    {filteredFbTargets.map(u => (
                       <option key={u.id} value={u.id}>{u.fullName ?? u.name} {u.company ? `(${u.company})` : ''}</option>
                     ))}
                   </select>
+                  {fbSearchQ && filteredFbTargets.length === 0 && (
+                    <p className="text-slate-500 text-xs mt-1">該当する招待者が見つかりません</p>
+                  )}
                 </div>
                 <div>
                   <label className="text-slate-400 text-xs block mb-1">種類</label>

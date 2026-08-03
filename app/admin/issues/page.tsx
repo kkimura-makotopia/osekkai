@@ -22,26 +22,46 @@ const esc = (v: unknown) =>
   String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
 const PDF_CSS = `
-@page { size: A4; margin: 16mm; }
+@page { size: A4; margin: 18mm; }
 * { box-sizing: border-box; }
-body { font-family: 'Hiragino Sans','Yu Gothic','Meiryo',sans-serif; color:#0A2540; margin:0; }
+body { font-family: 'Hiragino Kaku Gothic ProN','Hiragino Sans','Yu Gothic','Meiryo',sans-serif; color:#1c2733; margin:0; font-size:12px; line-height:1.7; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
 .sheet { page-break-after: always; }
 .sheet:last-child { page-break-after: auto; }
-.head { border-bottom:2px solid #0A2540; padding-bottom:8px; margin-bottom:4px; }
-.tag { color:#1E9CE6; font-size:11px; font-weight:bold; letter-spacing:1px; }
-.head h1 { font-size:20px; margin:2px 0; }
-.sub { color:#64748b; font-size:12px; }
-h2 { font-size:12px; color:#1E9CE6; border-left:3px solid #1E9CE6; padding-left:6px; margin:16px 0 8px; }
-table.info { width:100%; border-collapse:collapse; font-size:12px; }
-table.info th { text-align:left; color:#64748b; font-weight:normal; width:140px; padding:4px 8px; vertical-align:top; }
-table.info td { padding:4px 8px; }
-.issue { border:1px solid #e2e8f0; border-left:4px solid #1E9CE6; border-radius:8px; padding:10px 12px; margin-bottom:8px; }
-.badges span { display:inline-block; font-size:10px; padding:2px 8px; border-radius:999px; margin-right:4px; }
-.cat { background:#e6f4fd; color:#0F87CC; }
-.rt { background:#fef3c7; color:#b45309; }
-.summary { font-weight:bold; font-size:13px; margin-top:4px; }
-.detail { color:#475569; font-size:12px; white-space:pre-wrap; margin-top:4px; }
+.head { display:flex; justify-content:space-between; align-items:flex-end; gap:24px; border-bottom:2px solid #0A2540; padding-bottom:14px; margin-bottom:24px; }
+.head-left { min-width:0; }
+.head-topline { display:flex; align-items:baseline; gap:12px; margin-bottom:8px; flex-wrap:wrap; }
+.tag { font-size:10px; letter-spacing:2.5px; color:#1E9CE6; font-weight:700; white-space:nowrap; }
+.sub { color:#556270; font-size:11px; }
+.head h1 { font-size:23px; font-weight:700; color:#0A2540; margin:0; letter-spacing:.5px; line-height:1.3; }
+.facts { flex-shrink:0; text-align:right; font-size:11px; line-height:1.95; }
+.facts .row { white-space:nowrap; }
+.facts .flabel { color:#6b7885; margin-right:10px; letter-spacing:1px; }
+.facts .fval { color:#0A2540; font-weight:600; }
+h2 { display:flex; align-items:center; gap:8px; font-size:11px; letter-spacing:2px; color:#0A2540; font-weight:700; margin:0 0 14px; }
+h2::before { content:''; width:16px; height:2px; background:#1E9CE6; display:inline-block; }
+h2 .count { color:#6b7885; font-weight:400; letter-spacing:0; }
+.issue { display:flex; gap:16px; padding:16px 0; border-bottom:1px solid #d4dae1; page-break-inside:avoid; }
+.issue:last-child { border-bottom:none; }
+.num { font-size:18px; font-weight:700; color:#0A2540; min-width:26px; line-height:1.35; }
+.issue-body { flex:1; min-width:0; }
+.meta { font-size:10px; letter-spacing:.5px; margin-bottom:6px; }
+.meta .cat { color:#1E9CE6; font-weight:700; }
+.meta .rt { color:#1E9CE6; font-weight:700; }
+.meta .rtdesc { color:#5a93bf; font-weight:400; }
+.meta .dot { margin:0 8px; color:#9fb8cf; }
+.summary { font-weight:700; font-size:14px; color:#12213a; margin:0 0 6px; line-height:1.6; }
+.detail { color:#33414f; font-size:12px; white-space:pre-wrap; margin:0; line-height:1.8; }
 `
+
+// 依頼種別の補足説明（PDFで「〇〇型（…）」と表示）
+const RT_DESC: Record<string, string> = {
+  原因分析型: '根本原因・ボトルネックを知りたい',
+  打ち手探索型: '具体的な解決策・成功事例を知りたい',
+  意思決定型: '選択肢の判断材料が欲しい',
+  アイデア探索型: '新しい視点・発想・壁打ちが欲しい',
+  人脈紹介型: '人・会社・専門家との接点が欲しい',
+  経営相談型: '他の経営者の経験・考え方を聞きたい',
+}
 
 function AdminIssuesInner() {
   const { data: session, status } = useSession()
@@ -117,28 +137,34 @@ function AdminIssuesInner() {
     const sheet = (s: Submission) => {
       const u = s.user
       const name = u.fullName ?? u.name ?? '不明'
-      const info = `
-        <table class="info">
-          <tr><th>会社名</th><td>${esc(u.company || '—')}</td><th>業界</th><td>${esc(u.industry || '—')}</td></tr>
-          <tr><th>従業員数</th><td>${u.employeeCount != null ? esc(u.employeeCount) + '名' : '—'}</td><th>設立年</th><td>${u.foundingYear != null ? esc(u.foundingYear) + '年' : '—'}</td></tr>
-        </table>`
-      const issues = s.issues.map(i => `
+      const facts = [
+        ['業界', esc(u.industry || '—')],
+        ['従業員数', u.employeeCount != null ? esc(u.employeeCount) + '名' : '—'],
+        ['設立年', u.foundingYear != null ? esc(u.foundingYear) + '年' : '—'],
+      ].map(([l, v]) => `<div class="row"><span class="flabel">${l}</span><span class="fval">${v}</span></div>`).join('')
+      const issues = s.issues.map((i, idx) => `
         <div class="issue">
-          <div class="badges"><span class="cat">${esc(i.category)}</span>${i.requestType ? `<span class="rt">${esc(i.requestType)}</span>` : ''}</div>
-          <div class="summary">${esc(i.summary)}</div>
-          ${i.detail ? `<div class="detail">${esc(i.detail)}</div>` : ''}
+          <div class="num">${String(idx + 1).padStart(2, '0')}</div>
+          <div class="issue-body">
+            <div class="meta"><span class="cat">${esc(i.category)}</span>${i.requestType ? `<span class="dot">·</span><span class="rt">${esc(i.requestType)}${RT_DESC[i.requestType] ? `<span class="rtdesc">（${esc(RT_DESC[i.requestType])}）</span>` : ''}</span>` : ''}</div>
+            <div class="summary">${esc(i.summary)}</div>
+            ${i.detail ? `<div class="detail">${esc(i.detail)}</div>` : ''}
+          </div>
         </div>`).join('')
       return `
         <section class="sheet">
           <div class="head">
-            <div class="tag">経営課題 提出シート</div>
-            <h1>${esc(u.company || name)}</h1>
-            <div class="sub">${esc(name)} ／ ${esc(s.event.title)}（${new Date(s.event.heldAt).toLocaleDateString('ja-JP')}）</div>
+            <div class="head-left">
+              <div class="head-topline">
+                <span class="tag">経営課題 提出シート</span>
+                <span class="sub">${esc(name)}　／　${esc(s.event.title)}（${new Date(s.event.heldAt).toLocaleDateString('ja-JP')}）</span>
+              </div>
+              <h1>${esc(u.company || name)}</h1>
+            </div>
+            <div class="facts">${facts}</div>
           </div>
-          <h2>会社情報</h2>
-          ${info}
-          <h2>経営課題（${s.issues.length}件）</h2>
-          ${issues}
+          <h2>経営課題 <span class="count">（${s.issues.length}件）</span></h2>
+          <div class="issues">${issues}</div>
         </section>`
     }
 
