@@ -89,7 +89,6 @@ const FB_FIELDS: Record<string, FbField[]> = {
     { key: 'company', label: '紹介したい企業の会社名', required: true, placeholder: '例：株式会社XX' },
     { key: 'name', label: '紹介したい企業に所属する担当者名', required: true, placeholder: '例：おせっかい 太郎' },
     { key: 'reason', label: '紹介理由', textarea: true, required: true, placeholder: 'なぜこの方を紹介したいか' },
-    { key: 'url', label: 'URL', placeholder: 'https://...' },
   ],
   feedback: [
     { key: 'problem', label: 'お相手の課題', textarea: true, required: true, placeholder: '相手が抱えている課題' },

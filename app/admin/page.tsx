@@ -124,9 +124,15 @@ export default function AdminPage() {
     value: allIssues.filter(i => i.category === cat).length,
   })).filter(d => d.value > 0)
 
+  // 年商別の参加社数割合（対象会員1名=1社としてカウント）
+  const revenueBuckets = [...REVENUE_RANGES, '未設定']
+  const companyByRevenue = revenueBuckets.map(bucket => ({
+    label: bucket,
+    value: statUsers.filter(u => (u.recentRevenue ?? '未設定') === bucket).length,
+  })).filter(d => d.value > 0)
+
   // 企業年商別のおせっかいを出した数（送信者が対象会員のもののみ）
   const eligibleFeedbacks = feedbacks.filter(f => !isExcluded(userById.get(f.fromUser.id)))
-  const revenueBuckets = [...REVENUE_RANGES, '未設定']
   const feedbackByRevenue = revenueBuckets.map(bucket => ({
     label: bucket,
     value: eligibleFeedbacks.filter(f => (userById.get(f.fromUser.id)?.recentRevenue ?? '未設定') === bucket).length,
@@ -191,6 +197,7 @@ export default function AdminPage() {
       {/* 分布 */}
       <div className="grid md:grid-cols-2 gap-4">
         <DistCard title="会員の役職別の割合" items={jobDist} total={jobDist.reduce((s, d) => s + d.value, 0)} unit="名" color="bg-brand-sky" />
+        <DistCard title="年商別の参加社数割合" items={companyByRevenue} total={companyByRevenue.reduce((s, d) => s + d.value, 0)} unit="社" color="bg-indigo-500" />
         <DistCard title="経営課題のカテゴリ割合" items={categoryDist} total={issueCount} unit="件" color="bg-emerald-500" />
         <DistCard title="企業年商別のおせっかいを出した数" items={feedbackByRevenue} total={eligibleFeedbacks.length} unit="件" color="bg-amber-500" className="md:col-span-2" />
       </div>

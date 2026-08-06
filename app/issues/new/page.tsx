@@ -183,6 +183,7 @@ function NewIssueWizard() {
   const submit = async () => {
     setError('')
     if (issues.some(i => !i.summary.trim())) { setError('各相談の「見出し」を入力してください'); return }
+    if (issues.some(i => (i.detail ?? '').length > 250)) { setError('「背景・具体的に聞きたいこと」は各250文字以内にしてください'); return }
     if (submittedEventIds.has(eventId) &&
         !confirm('このイベントには既に提出済みの経営課題があります。\n運営に提出すると、以前の内容は上書きされます。よろしいですか？')) {
       return
@@ -201,8 +202,10 @@ function NewIssueWizard() {
       body: JSON.stringify(body),
     })
     setSubmitting(false)
-    if (res.ok) router.push('/issues')
-    else {
+    if (res.ok) {
+      sessionStorage.setItem('issueSubmitted', '1')
+      router.push('/issues')
+    } else {
       const data = await res.json().catch(() => ({}))
       setError(data.error ?? '提出に失敗しました')
     }

@@ -86,10 +86,17 @@ export function IssueCardsEditor({ issues, setIssues, max = 3 }: Props) {
               className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-sky resize-none" />
           </div>
           <div>
-            <label className="text-slate-400 text-xs mb-1 block">背景・具体的に聞きたいこと / 紹介してほしいこと</label>
+            <label className="text-slate-400 text-xs mb-1 block">
+              背景・具体的に聞きたいこと / 紹介してほしいこと
+              <span className="text-slate-500 ml-1">（最大250文字）</span>
+            </label>
             <textarea value={issue.detail} onChange={e => update(i, { detail: e.target.value })}
-              rows={9} placeholder="現状の数字や取り組み、これまで試したことを書き、具体的に何を聞きたいか・どんな相手を紹介してほしいかを明確に書いてください。"
+              rows={9} maxLength={250}
+              placeholder="現状の数字や取り組み、これまで試したことを書き、具体的に何を聞きたいか・どんな相手を紹介してほしいかを明確に書いてください。"
               className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-sky resize-none" />
+            <p className={`text-[11px] mt-1 text-right ${issue.detail.length > 250 ? 'text-red-400' : 'text-slate-500'}`}>
+              {issue.detail.length} / 250
+            </p>
           </div>
         </div>
       ))}

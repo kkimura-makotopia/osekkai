@@ -19,6 +19,14 @@ export default function IssuesPage() {
   const router = useRouter()
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(true)
+  const [submittedBanner, setSubmittedBanner] = useState(false)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && sessionStorage.getItem('issueSubmitted')) {
+      setSubmittedBanner(true)
+      sessionStorage.removeItem('issueSubmitted')
+    }
+  }, [])
 
   useEffect(() => {
     if (status === 'unauthenticated') { router.push('/login'); return }
@@ -35,6 +43,11 @@ export default function IssuesPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
+      {submittedBanner && (
+        <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-sm rounded-xl px-4 py-3 mb-6 leading-relaxed">
+          経営課題の提出が完了しました。最終提出期限は当日の3日前です。変更や差し替えはそれまでに実施をお願いいたします！
+        </div>
+      )}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white">経営課題</h1>

@@ -57,6 +57,9 @@ export default function IssueDetailPage() {
     if (issues.length === 0 || issues.some(i => !i.summary.trim())) {
       setError('各相談の「見出し」を入力してください'); return
     }
+    if (issues.some(i => (i.detail ?? '').length > 250)) {
+      setError('「背景・具体的に聞きたいこと」は各250文字以内にしてください'); return
+    }
     setView('preview')
   }
 
