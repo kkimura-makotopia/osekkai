@@ -1,12 +1,13 @@
 // 経営課題のカテゴリ（コミュニティ発表で使う区分）
 export const ISSUE_CATEGORIES = [
-  '事業課題',
-  'マーケティング課題',
-  '営業課題',
-  '経営課題',
-  '組織課題',
-  '採用課題',
-  '財務課題',
+  '経営戦略',
+  '事業戦略',
+  'マーケティング',
+  '営業',
+  '組織・人事',
+  '採用',
+  '財務',
+  'DX・業務改善',
   'その他',
 ] as const
 
@@ -14,6 +15,18 @@ export type IssueCategory = (typeof ISSUE_CATEGORIES)[number]
 
 export const isIssueCategory = (v: string): v is IssueCategory =>
   (ISSUE_CATEGORIES as readonly string[]).includes(v)
+
+// カテゴリごとの相談例（ドロップダウン下に薄く表示・AI文脈にも利用）
+export const CATEGORY_EXAMPLES: Record<string, string> = {
+  経営戦略: 'ビジョン・中期計画・意思決定・経営体制',
+  事業戦略: '新規事業・PMF・商品開発・価格・M&A',
+  マーケティング: '集客・広告・ブランディング・SNS',
+  営業: '商談・営業組織・紹介・営業フロー',
+  '組織・人事': '評価制度・マネジメント・育成・文化',
+  採用: '採用戦略・媒体・面接・定着',
+  財務: '資金繰り・利益改善・資金調達・補助金',
+  'DX・業務改善': 'AI活用・業務効率化・システム導入・自動化',
+}
 
 // 相談の種別（6パターン）
 export const REQUEST_TYPES = [
@@ -57,6 +70,16 @@ export const REQUEST_TYPE_INFO: Record<RequestType, { def: string; expect: strin
     expect: '実体験、判断基準、経営者としての考え方、意思決定プロセス、長期視点',
     examples: ['権限委譲について相談したい', '幹部育成について議論したい', '経営者としてどう判断するか聞きたい'],
   },
+}
+
+// 種別の短い補足（提出シート/PDFで「〇〇型（…）」と表示。文字列カラムなので Record<string,string>）
+export const REQUEST_TYPE_SHORT: Record<string, string> = {
+  原因分析型: '根本原因・ボトルネックを知りたい',
+  打ち手探索型: '具体的な解決策・成功事例を知りたい',
+  意思決定型: '選択肢の判断材料が欲しい',
+  アイデア探索型: '新しい視点・発想・壁打ちが欲しい',
+  人脈紹介型: '人・会社・専門家との接点が欲しい',
+  経営相談型: '他の経営者の経験・考え方を聞きたい',
 }
 
 // ②質疑応答形式の設問と回答例（exampleは入力欄にグレーで表示）

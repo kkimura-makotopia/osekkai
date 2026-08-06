@@ -104,7 +104,7 @@ const FB_FIELDS: Record<string, FbField[]> = {
   ],
   other: [
     { key: 'problem', label: 'お相手の課題', textarea: true, required: true, placeholder: '相手が抱えている課題' },
-    { key: 'content', label: '内容', textarea: true, required: true, placeholder: '応援メッセージなど' },
+    { key: 'content', label: '内容', textarea: true, required: true, placeholder: '協業提案やコミュニティ・交流会のお誘い等' },
   ],
 }
 

@@ -1,4 +1,5 @@
 'use client'
+import { REQUEST_TYPE_SHORT } from '@/lib/issueOptions'
 
 interface PreviewIssue {
   category: string
@@ -19,61 +20,76 @@ interface Props {
 }
 
 export function SubmissionPreview(p: Props) {
-  const info: [string, string][] = [
+  const facts: [string, string][] = [
     ['業界', p.industry || '—'],
     ['従業員数', p.employeeCount !== '' && p.employeeCount != null ? `${p.employeeCount}名` : '—'],
     ['設立年', p.foundingYear !== '' && p.foundingYear != null ? `${p.foundingYear}年` : '—'],
   ]
 
-  return (
-    <div className="rounded-2xl border border-brand-navy-700 overflow-hidden">
-      {/* シートヘッダー */}
-      <div className="bg-gradient-to-r from-brand-navy-900 to-brand-navy-800 px-5 py-4 border-b border-brand-navy-700">
-        <p className="text-[11px] text-brand-sky-400 font-bold tracking-wider mb-0.5">経営課題 提出シート</p>
-        <p className="text-white font-bold">{p.company || p.fullName || '—'}</p>
-        {p.eventTitle && (
-          <p className="text-slate-400 text-xs mt-0.5">
-            {p.eventTitle}{p.eventDate ? `（${new Date(p.eventDate).toLocaleDateString('ja-JP')}）` : ''}
-          </p>
-        )}
-      </div>
+  const eventLine = p.eventTitle
+    ? `${p.eventTitle}${p.eventDate ? `（${new Date(p.eventDate).toLocaleDateString('ja-JP')}）` : ''}`
+    : ''
 
-      {/* 会社情報 */}
-      <div className="bg-brand-navy-900/40 px-5 py-3">
-        <p className="text-brand-sky-400 text-xs font-bold mb-2 flex items-center gap-1.5">
-          <span className="w-1 h-3.5 bg-brand-sky rounded-full inline-block" />会社情報
-        </p>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
-          {info.map(([label, value], i) => (
-            <div key={i} className="flex items-baseline gap-2">
-              <p className="text-slate-500 text-[11px] shrink-0">{label}</p>
-              <p className="text-white text-sm font-medium truncate">{value}</p>
+  return (
+    <div className="bg-white rounded-xl shadow-lg text-[#1c2733] overflow-hidden">
+      <div className="px-7 py-7">
+        {/* ヘッダー */}
+        <div className="flex justify-between items-end gap-6 border-b-2 border-[#0A2540] pb-3.5 mb-6">
+          <div className="min-w-0">
+            <div className="flex items-baseline gap-3 flex-wrap mb-2">
+              <span className="text-[10px] tracking-[2.5px] text-[#1E9CE6] font-bold whitespace-nowrap">経営課題 提出シート</span>
+              <span className="text-[#556270] text-[11px]">
+                {p.fullName || '—'}{eventLine ? `　／　${eventLine}` : ''}
+              </span>
+            </div>
+            <h1 className="text-[22px] font-bold text-[#0A2540] leading-tight truncate">{p.company || p.fullName || '—'}</h1>
+          </div>
+          <div className="shrink-0 text-right text-[11px] leading-[1.9]">
+            {facts.map(([l, v], i) => (
+              <div key={i} className="whitespace-nowrap">
+                <span className="text-[#6b7885] mr-2.5 tracking-wide">{l}</span>
+                <span className="text-[#0A2540] font-semibold">{v}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 経営課題 */}
+        <div className="flex items-center gap-2 text-[11px] tracking-[2px] text-[#0A2540] font-bold mb-3">
+          <span className="w-4 h-0.5 bg-[#1E9CE6] inline-block" />
+          経営課題 <span className="text-[#6b7885] font-normal tracking-normal">（{p.issues.length}件）</span>
+        </div>
+        <div>
+          {p.issues.map((it, i) => (
+            <div key={i} className={`flex gap-4 py-4 ${i < p.issues.length - 1 ? 'border-b border-[#d4dae1]' : ''}`}>
+              <div className="text-[18px] font-bold text-[#0A2540] min-w-[26px] leading-snug">{String(i + 1).padStart(2, '0')}</div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] mb-1.5">
+                  <span className="text-[#1E9CE6] font-bold">{it.category}</span>
+                  {it.requestType && (
+                    <>
+                      <span className="mx-2 text-[#9fb8cf]">·</span>
+                      <span className="text-[#1E9CE6] font-bold">{it.requestType}</span>
+                      {REQUEST_TYPE_SHORT[it.requestType] && (
+                        <span className="text-[#5a93bf]">（{REQUEST_TYPE_SHORT[it.requestType]}）</span>
+                      )}
+                    </>
+                  )}
+                </div>
+                <p className="font-bold text-[14px] text-[#12213a] leading-snug mb-1.5">{it.summary || '（タイトル未入力）'}</p>
+                {it.detail && <p className="text-[#33414f] text-[12px] whitespace-pre-wrap leading-relaxed">{it.detail}</p>}
+              </div>
             </div>
           ))}
         </div>
-      </div>
 
-      {/* 経営課題 */}
-      <div className="bg-brand-navy-800 px-5 py-4 border-t border-brand-navy-700">
-        <p className="text-brand-sky-400 text-xs font-bold mb-3 flex items-center gap-1.5">
-          <span className="w-1 h-3.5 bg-brand-sky rounded-full inline-block" />経営課題
-          <span className="text-slate-500 font-normal">（{p.issues.length}件）</span>
-        </p>
-        <div className="space-y-3">
-          {p.issues.map((it, i) => (
-            <div key={i} className="relative bg-brand-navy-900/50 border border-brand-navy-700 rounded-xl p-4 pl-5">
-              <span className="absolute left-0 top-3 bottom-3 w-1 bg-brand-sky rounded-full" />
-              <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-sky/15 text-brand-sky-400 border border-brand-sky/30">{it.category}</span>
-                {it.requestType && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">{it.requestType}</span>
-                )}
-                <span className="ml-auto text-slate-500 text-[11px]">課題 {i + 1}</span>
-              </div>
-              <p className="text-white text-sm font-bold leading-relaxed">{it.summary}</p>
-              {it.detail && <p className="text-slate-400 text-xs whitespace-pre-wrap mt-1.5 leading-relaxed">{it.detail}</p>}
-            </div>
-          ))}
+        {/* メモ */}
+        <div className="mt-6">
+          <div className="flex items-center gap-2 text-[11px] tracking-[2px] text-[#0A2540] font-bold mb-2">
+            <span className="w-4 h-0.5 bg-[#1E9CE6] inline-block" />
+            メモ <span className="text-[#6b7885] font-normal tracking-normal text-[10px]">経営課題の発表時のメモを記載するのに使用ください</span>
+          </div>
+          <div className="border border-[#c2ccd6] rounded h-[54px]" />
         </div>
       </div>
     </div>

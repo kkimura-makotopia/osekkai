@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { ISSUE_CATEGORIES, REQUEST_TYPES, REQUEST_TYPE_INFO } from '@/lib/issueOptions'
+import { ISSUE_CATEGORIES, CATEGORY_EXAMPLES, REQUEST_TYPES, REQUEST_TYPE_INFO } from '@/lib/issueOptions'
 
 // 使用モデル（変更する場合はこの1行のみ）
 const MODEL = 'claude-sonnet-4-6'
@@ -9,6 +9,11 @@ const REQUEST_TYPE_BLOCK = REQUEST_TYPES.map((t, i) => {
   const info = REQUEST_TYPE_INFO[t]
   return `${i + 1}. ${t}\n   定義：${info.def}\n   期待する回答：${info.expect}\n   見出し例：${info.examples.join(' / ')}`
 }).join('\n')
+
+// プロンプトに埋め込むカテゴリの相談例ブロック
+const CATEGORY_BLOCK = ISSUE_CATEGORIES
+  .map(c => `- ${c}${CATEGORY_EXAMPLES[c] ? `（例：${CATEGORY_EXAMPLES[c]}）` : ''}`)
+  .join('\n')
 
 export interface AiIssue {
   category: string
@@ -81,7 +86,8 @@ const SYSTEM_PROMPT = `あなたは経営者コミュニティのファシリテ
 ${REQUEST_TYPE_BLOCK}
 
 各項目の構成:
-- category: 課題カテゴリ（指定の選択肢から選ぶ）
+- category: 課題カテゴリ（次の選択肢から内容に最も合うものを1つ選ぶ）
+${CATEGORY_BLOCK}
 - requestType: 上記6種別のうち、その相談に最も合うものを1つ
 - summary: コミュニティで発表する見出しの一文。必ず質問・依頼の形にする。
   （良い例:「歩留まり分析などデータドリブンに施策決定することでの成功事例を知りたい」「3名以上の社労士事務所と繋がりが多いアライアンスパートナーを発見したい」「ストック型のビジネスモデルを構築するにあたり既存顧客へのクロスセルはどのように行っていますか？」）
@@ -97,10 +103,10 @@ ${REQUEST_TYPE_BLOCK}
 - 背景（現状の数字・状況）は具体的に書いてよいが、「聞きたいこと」の部分は誰でも答えられる開かれた問いにする。
 
 参考にすべき良い見出しのトーン:
-- 【マーケティング課題】【原因分析型】広告経由の売上が伸び悩んでいる原因を知りたい
-- 【営業課題】【打ち手探索型】紹介営業を仕組み化した成功事例やTipsを知りたい
-- 【経営課題】【意思決定型】採用を強化すべきか外注に切り替えるべきか、判断軸を聞きたい
-- 【事業課題】【人脈紹介型】共催セミナーを一緒に実施できる企業を紹介してほしい
+- 【マーケティング】【原因分析型】広告経由の売上が伸び悩んでいる原因を知りたい
+- 【営業】【打ち手探索型】紹介営業を仕組み化した成功事例やTipsを知りたい
+- 【組織・人事】【意思決定型】採用を強化すべきか外注に切り替えるべきか、判断軸を聞きたい
+- 【事業戦略】【人脈紹介型】共催セミナーを一緒に実施できる企業を紹介してほしい
 
 必ず日本語で、2〜3件、submit_issues ツールで回答してください。`
 

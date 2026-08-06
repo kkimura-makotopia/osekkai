@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo, Suspense } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ISSUE_CATEGORIES, MODE_LABELS } from '@/lib/issueOptions'
+import { ISSUE_CATEGORIES, MODE_LABELS, REQUEST_TYPE_SHORT } from '@/lib/issueOptions'
 
 interface Issue { id: string; category: string; requestType: string | null; summary: string; detail: string | null }
 interface Submission {
@@ -58,15 +58,6 @@ h2 .count { color:#6b7885; font-weight:400; letter-spacing:0; }
 .memo-box { border:1px solid #c2ccd6; border-radius:4px; height:54px; }
 `
 
-// 依頼種別の補足説明（PDFで「〇〇型（…）」と表示）
-const RT_DESC: Record<string, string> = {
-  原因分析型: '根本原因・ボトルネックを知りたい',
-  打ち手探索型: '具体的な解決策・成功事例を知りたい',
-  意思決定型: '選択肢の判断材料が欲しい',
-  アイデア探索型: '新しい視点・発想・壁打ちが欲しい',
-  人脈紹介型: '人・会社・専門家との接点が欲しい',
-  経営相談型: '他の経営者の経験・考え方を聞きたい',
-}
 
 function AdminIssuesInner() {
   const { data: session, status } = useSession()
@@ -151,7 +142,7 @@ function AdminIssuesInner() {
         <div class="issue">
           <div class="num">${String(idx + 1).padStart(2, '0')}</div>
           <div class="issue-body">
-            <div class="meta"><span class="cat">${esc(i.category)}</span>${i.requestType ? `<span class="dot">·</span><span class="rt">${esc(i.requestType)}${RT_DESC[i.requestType] ? `<span class="rtdesc">（${esc(RT_DESC[i.requestType])}）</span>` : ''}</span>` : ''}</div>
+            <div class="meta"><span class="cat">${esc(i.category)}</span>${i.requestType ? `<span class="dot">·</span><span class="rt">${esc(i.requestType)}${REQUEST_TYPE_SHORT[i.requestType] ? `<span class="rtdesc">（${esc(REQUEST_TYPE_SHORT[i.requestType])}）</span>` : ''}</span>` : ''}</div>
             <div class="summary">${esc(i.summary)}</div>
             ${i.detail ? `<div class="detail">${esc(i.detail)}</div>` : ''}
           </div>

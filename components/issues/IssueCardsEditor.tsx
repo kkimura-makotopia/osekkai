@@ -1,6 +1,6 @@
 'use client'
 import { Dispatch, SetStateAction } from 'react'
-import { ISSUE_CATEGORIES, REQUEST_TYPES, REQUEST_TYPE_INFO, RequestType } from '@/lib/issueOptions'
+import { ISSUE_CATEGORIES, CATEGORY_EXAMPLES, REQUEST_TYPES, REQUEST_TYPE_INFO, RequestType } from '@/lib/issueOptions'
 
 export interface EditableIssue {
   category: string
@@ -38,10 +38,21 @@ export function IssueCardsEditor({ issues, setIssues, max = 3 }: Props) {
           <div className="grid sm:grid-cols-2 gap-3">
             <div>
               <label className="text-slate-400 text-xs mb-1 block">課題カテゴリ</label>
-              <select value={issue.category} onChange={e => update(i, { category: e.target.value })}
-                className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-brand-sky">
-                {ISSUE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+              {(() => {
+                const knownCat = (ISSUE_CATEGORIES as readonly string[]).includes(issue.category)
+                return (
+                  <>
+                    <select value={issue.category} onChange={e => update(i, { category: e.target.value })}
+                      className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-brand-sky">
+                      {!knownCat && issue.category && <option value={issue.category}>{issue.category}（旧・要変更）</option>}
+                      {ISSUE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    {CATEGORY_EXAMPLES[issue.category] && (
+                      <p className="text-slate-500 text-[11px] mt-1 leading-relaxed">相談例: {CATEGORY_EXAMPLES[issue.category]}</p>
+                    )}
+                  </>
+                )
+              })()}
             </div>
             <div>
               <label className="text-slate-400 text-xs mb-1 block">種別</label>
