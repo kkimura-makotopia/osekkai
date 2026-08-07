@@ -58,7 +58,7 @@ export default function IssuesHelpPage() {
 
         <Step n={6} title="内容の確認・編集">
           AIの提案はあくまで下書きです。<strong className="text-slate-200">タイトルや内容は自由に編集</strong>してください（課題は最大3件）。<br />
-          右上の <a href="#tips" className="text-brand-sky-400 hover:text-brand-sky underline underline-offset-2">💡 おせっかいを多く獲得するヒント</a> も参考にしながら、一目で伝わる形に整えましょう。
+          右上の <a href="#tips" className="text-brand-sky-400 hover:text-brand-sky underline underline-offset-2">💡 おせっかいを貰うためのヒント</a> も参考にしながら、一目で伝わる形に整えましょう。
           <Shot src="/guide/6_issue-edit.png" alt="内容の確認・編集画面" />
         </Step>
 
@@ -69,13 +69,14 @@ export default function IssuesHelpPage() {
       </div>
 
       {/* ヒント */}
-      <Section id="tips" title="おせっかいを多く獲得するヒント" icon="💡">
+      <Section id="tips" title="おせっかいを貰うためのヒント" icon="💡">
         <ul className="space-y-2 text-sm text-slate-300">
-          <Hint>AIレコメンドは参考程度にしていただき、言い回しなどは是非変更してください！</Hint>
-          <Hint>発表時間は8分なので、課題は2〜3件を推奨しています！</Hint>
-          <Hint>ターゲットを年商規模などで絞りすぎると、おせっかいが出にくくなる可能性が高いので、どんな会員でも理解しておせっかいができる文章を工夫してみてください！</Hint>
-          <Hint>抽象的すぎると深掘りで時間が終了してしまいます。「代理店の管理工数が肥大化しているので代理店や店舗管理のTipsを知りたい」等の具体的な課題も織り交ぜると、おせっかいをもらいやすいです！</Hint>
-          <Hint>直接的なクライアントの紹介依頼はNGですが、Tipsがある方や共催セミナーができる方などの紹介依頼は有効です！</Hint>
+          <Hint>直接的なクライアントの紹介依頼ではなく、共催セミナーや協業ができるパートナーの紹介依頼をお願いします！</Hint>
+          <Hint>AIが出した経営課題提案のままではなく背景や欲しいおせっかいを明確にして、伝え方も是非工夫してください。</Hint>
+          <Hint>経営課題は最大3件登録できますが、当日の発表時間は9分なので、説明に時間がかかる場合は1〜2件を推奨しています。</Hint>
+          <Hint>ニッチな課題過ぎるとおせっかいが出にくいので、業界外でも分かるような伝え方などが重要です。</Hint>
+          <Hint>当日参加している企業さんだけではなく、人脈にもアプローチできるような課題設定や伝え方を推奨しています。</Hint>
+          <Hint>解決策ではなく経営課題を言語化したい場合は、あえて抽象度の高い状態で経営課題を提出するのも効果的です。</Hint>
         </ul>
       </Section>
 

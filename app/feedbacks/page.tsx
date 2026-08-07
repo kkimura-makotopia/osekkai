@@ -82,6 +82,8 @@ export default function FeedbacksPage() {
   const [filter, setFilter] = useState<FbFilter>('all')
   const [eventFilter, setEventFilter] = useState<string>('all')   // 'all' | eventId
   const [senderFilter, setSenderFilter] = useState<string>('all') // 'all' | userId
+  const [senderSearch, setSenderSearch] = useState('')
+  const [senderListOpen, setSenderListOpen] = useState(false)
   const [openFb, setOpenFb] = useState<Feedback | null>(null)
   const [openUserId, setOpenUserId] = useState<string | null>(null)
 
@@ -170,6 +172,12 @@ export default function FeedbacksPage() {
     visibleAll.forEach(f => { if (!map.has(f.fromUser.id)) map.set(f.fromUser.id, f.fromUser) })
     return Array.from(map.values())
   })()
+  const senderLabel = (u: UserLite) =>
+    shouldHide(u) ? '匿名' : `${u.fullName ?? u.name ?? '-'}${u.company ? ` (${u.company})` : ''}`
+  const senderQ = senderSearch.trim().toLowerCase()
+  const filteredSenders = senderQ
+    ? uniqueSenders.filter(u => senderLabel(u).toLowerCase().includes(senderQ))
+    : uniqueSenders
 
   // 氏名クリック → ユーザー詳細ポップアップ（ゲスト対象 or 閲覧者がゲストなら開かない）
   const handleNameClick = (u: UserLite) => {
@@ -229,19 +237,37 @@ export default function FeedbacksPage() {
           </select>
         </div>
 
-        <div>
+        <div className="relative">
           <label className="text-slate-400 text-xs block mb-1">おせっかいした人で絞り込み</label>
-          <select
-            value={senderFilter}
-            onChange={e => setSenderFilter(e.target.value)}
-            className="w-full bg-brand-navy-800 border border-brand-navy-700 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:border-brand-sky"
-          >
-            <option value="all">すべて</option>
-            {uniqueSenders.map(u => {
-              const label = shouldHide(u) ? '匿名' : `${u.fullName ?? u.name ?? '-'}${u.company ? ` (${u.company})` : ''}`
-              return <option key={u.id} value={u.id}>{label}</option>
-            })}
-          </select>
+          <input type="text" value={senderSearch}
+            onChange={e => { setSenderSearch(e.target.value); setSenderListOpen(true); setSenderFilter('all') }}
+            onFocus={() => setSenderListOpen(true)}
+            onBlur={() => setTimeout(() => setSenderListOpen(false), 150)}
+            placeholder="名前・会社名で検索..."
+            autoComplete="off"
+            className="w-full bg-brand-navy-800 border border-brand-navy-700 rounded-lg px-3 py-1.5 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-brand-sky" />
+          {senderListOpen && (
+            <ul className="absolute z-20 mt-1 w-full max-h-56 overflow-auto bg-brand-navy-800 border border-brand-navy-600 rounded-lg shadow-xl">
+              <li>
+                <button type="button" onMouseDown={e => e.preventDefault()}
+                  onClick={() => { setSenderFilter('all'); setSenderSearch(''); setSenderListOpen(false) }}
+                  className={`w-full text-left px-3 py-2 text-xs transition-colors hover:bg-brand-navy-700 ${senderFilter === 'all' ? 'bg-brand-sky/20 text-white' : 'text-slate-200'}`}>
+                  すべて
+                </button>
+              </li>
+              {filteredSenders.length === 0 ? (
+                <li className="px-3 py-2 text-slate-500 text-xs">該当する人が見つかりません</li>
+              ) : filteredSenders.map(u => (
+                <li key={u.id}>
+                  <button type="button" onMouseDown={e => e.preventDefault()}
+                    onClick={() => { setSenderFilter(u.id); setSenderSearch(senderLabel(u)); setSenderListOpen(false) }}
+                    className={`w-full text-left px-3 py-2 text-xs transition-colors hover:bg-brand-navy-700 ${senderFilter === u.id ? 'bg-brand-sky/20 text-white' : 'text-slate-200'}`}>
+                    {senderLabel(u)}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
 

@@ -33,11 +33,19 @@ type Mode = 'text' | 'qa' | 'manual'
 const STEPS = ['イベント・形式', 'プロフィール', '入力・AI解析', '内容の確認・編集', '提出する最新版を確認']
 
 const HINTS = [
-  'AIレコメンドは参考程度にしていただき、言い回しなどは是非変更してください！',
-  '発表時間は8分なので、課題は2〜3件を推奨しています！',
-  'ターゲットを年商規模などで絞りすぎると、おせっかいが出にくくなる可能性が高いので、どんな会員でも理解しておせっかいができる文章を工夫してみてください！',
-  '抽象的すぎると深掘りで時間が終了してしまいます。「代理店の管理工数が肥大化しているので代理店や店舗管理のTipsを知りたい」等の具体的な課題も織り交ぜると、おせっかいをもらいやすいです！',
-  '直接的なクライアントの紹介依頼はNGですが、Tipsがある方や共催セミナーができる方などの紹介依頼は有効です！',
+  '直接的なクライアントの紹介依頼ではなく、共催セミナーや協業ができるパートナーの紹介依頼をお願いします！',
+  'AIが出した経営課題提案のままではなく背景や欲しいおせっかいを明確にして、伝え方も是非工夫してください。',
+  '経営課題は最大3件登録できますが、当日の発表時間は9分なので、説明に時間がかかる場合は1〜2件を推奨しています。',
+  'ニッチな課題過ぎるとおせっかいが出にくいので、業界外でも分かるような伝え方などが重要です。',
+  '当日参加している企業さんだけではなく、人脈にもアプローチできるような課題設定や伝え方を推奨しています。',
+  '解決策ではなく経営課題を言語化したい場合は、あえて抽象度の高い状態で経営課題を提出するのも効果的です。',
+]
+
+const CHECKS = [
+  '当日はこのシートを各社分印刷して配布します。第三者が見ても分かる内容になっていますか？',
+  '求めている課題種別はあっていますか？（課題カテゴリの右にある「原因分析型」「アイデア探索型」等の項目）',
+  '業界・従業員数・設立年は入っていますか？（未入力の場合はマイページから入力してください）',
+  '9分の発表時間でアウトプットできますか？（説明が難しいと理解までに時間がかかりオーバーする可能性あり）',
 ]
 
 function NewIssueWizard() {
@@ -65,6 +73,7 @@ function NewIssueWizard() {
   const [qaIndex, setQaIndex] = useState(0)
   const [analyzeProgress, setAnalyzeProgress] = useState(0)
   const [hintOpen, setHintOpen] = useState(true)
+  const [checkOpen, setCheckOpen] = useState(true)
   const loadedRef = useRef(false)
 
   // ステップ切り替え時に画面最上部へスクロール
@@ -177,6 +186,7 @@ function NewIssueWizard() {
       setError('各相談の「見出し」を入力してください')
       return
     }
+    setCheckOpen(true)
     setStep(4)
   }
 
@@ -455,7 +465,7 @@ function NewIssueWizard() {
         hintOpen ? (
           <div className="fixed right-4 top-20 z-50 w-80 max-w-[calc(100vw-2rem)] bg-brand-navy-800 border border-brand-sky/40 rounded-2xl shadow-2xl p-4">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-brand-sky-400 font-bold text-sm">💡 おせっかいを多く獲得するヒント</p>
+              <p className="text-brand-sky-400 font-bold text-sm">💡 おせっかいを貰うためのヒント</p>
               <button onClick={() => setHintOpen(false)} aria-label="閉じる"
                 className="text-slate-400 hover:text-white text-xl leading-none px-1">×</button>
             </div>
@@ -468,9 +478,34 @@ function NewIssueWizard() {
             </ul>
           </div>
         ) : (
-          <button onClick={() => setHintOpen(true)} title="おせっかいを多く獲得するヒント"
+          <button onClick={() => setHintOpen(true)} title="おせっかいを貰うためのヒント"
             className="fixed right-4 top-20 z-50 w-11 h-11 rounded-full bg-brand-sky hover:bg-brand-sky-400 text-white shadow-2xl flex items-center justify-center text-xl">
             💡
+          </button>
+        )
+      )}
+
+      {/* 提出前の確認ポイント（最終確認ステップで表示） */}
+      {step === 4 && (
+        checkOpen ? (
+          <div className="fixed right-4 top-20 z-50 w-80 max-w-[calc(100vw-2rem)] bg-brand-navy-800 border border-amber-400/40 rounded-2xl shadow-2xl p-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-amber-300 font-bold text-sm">📋 提出前の確認ポイント</p>
+              <button onClick={() => setCheckOpen(false)} aria-label="閉じる"
+                className="text-slate-400 hover:text-white text-xl leading-none px-1">×</button>
+            </div>
+            <ul className="space-y-2">
+              {CHECKS.map((c, i) => (
+                <li key={i} className="text-slate-300 text-xs leading-relaxed flex gap-2">
+                  <span className="text-amber-300 shrink-0">☑</span><span>{c}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <button onClick={() => setCheckOpen(true)} title="提出前の確認ポイント"
+            className="fixed right-4 top-20 z-50 w-11 h-11 rounded-full bg-amber-500 hover:bg-amber-400 text-white shadow-2xl flex items-center justify-center text-xl">
+            📋
           </button>
         )
       )}
