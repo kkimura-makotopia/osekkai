@@ -48,7 +48,7 @@ export default function HelpPage() {
           </Step>
 
           <Step n={3} title="送り先を選ぶ">
-            交流会に招待されているメンバーから 1名 選択します。
+            招待されているメンバーを <strong>名前・会社名で検索</strong>して、候補から1名を選びます。
           </Step>
 
           <Step n={4} title="種類を選ぶ">
@@ -56,13 +56,14 @@ export default function HelpPage() {
               <li><span className="inline-block bg-blue-500/20 text-blue-400 text-xs px-2 py-0.5 rounded-full mr-2">知人の紹介</span>有用な人をご紹介する</li>
               <li><span className="inline-block bg-emerald-500/20 text-emerald-400 text-xs px-2 py-0.5 rounded-full mr-2">サービスの紹介</span>関連するサービスやプロダクトを共有する</li>
               <li><span className="inline-block bg-purple-500/20 text-purple-400 text-xs px-2 py-0.5 rounded-full mr-2">ナレッジの共有</span>経験や知見を伝える</li>
-              <li><span className="inline-block bg-slate-500/20 text-slate-300 text-xs px-2 py-0.5 rounded-full mr-2">その他</span>上記に当てはまらない応援メッセージなど</li>
+              <li><span className="inline-block bg-slate-500/20 text-slate-300 text-xs px-2 py-0.5 rounded-full mr-2">その他</span>協業提案やコミュニティ・交流会のお誘いなど</li>
             </ul>
+            <p className="text-slate-400 text-xs mt-2">※ 種類ごとに入力項目が変わります。いずれも冒頭で「お相手の課題」を記入します。</p>
           </Step>
 
           <Step n={5} title="内容を書いて「送信」">
             相手にとって価値ある具体的な情報を記入し、送信します。<br />
-            <span className="text-slate-400 text-xs">※ 後から自分の投稿は編集・削除できます。</span>
+            <span className="text-slate-400 text-xs">※ 送信後も送り先は保持され、続けて送れます。自分の投稿は後から編集・削除できます。</span>
           </Step>
 
           <div className="mt-5 bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 text-sm text-blue-100">
@@ -72,9 +73,17 @@ export default function HelpPage() {
         </Card>
 
         {/* 経営課題提出フォーム */}
-        <Card title="経営課題提出フォームの使い方" icon="📝" summary="AIと一緒に経営課題を整理して提出できます">
-          <p className="text-slate-300 text-sm leading-relaxed mb-4">
-            交流会で発表する経営課題を、AIと一緒に整理して提出できます。テキスト・質疑応答・自分で作成の3つの方法から選べます。
+        <Card title="経営課題提出フォームの使い方" icon="📝" summary="AIが経営課題を提案。整理して交流会で発表できます">
+          <p className="text-slate-300 text-sm leading-relaxed mb-3">
+            交流会で発表する経営課題を提出できます。入力方法は3つから選べます。
+          </p>
+          <ul className="text-slate-300 text-sm space-y-1.5 mb-3">
+            <li>・<strong>テキスト形式</strong>：現状を自由に書くと <span className="text-brand-sky-400">AIが課題を提案</span></li>
+            <li>・<strong>質疑応答形式</strong>：質問に答えると <span className="text-brand-sky-400">AIが課題を提案</span></li>
+            <li>・<strong>自分で作成する</strong>：AIを使わず直接入力</li>
+          </ul>
+          <p className="text-slate-400 text-xs leading-relaxed mb-4">
+            提出した課題は一覧からいつでも編集できます。<strong className="text-slate-300">最終提出期限は交流会当日の3日前</strong>のため、変更・差し替えはそれまでにお願いします。
           </p>
           <Link href="/help/issues"
             className="inline-block bg-brand-sky hover:bg-brand-sky-400 text-white text-sm font-medium px-4 py-2 rounded-xl">
