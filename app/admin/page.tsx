@@ -35,8 +35,8 @@ const isExcluded = (u: { role?: string | null; fullName?: string | null; name?: 
   return EXCLUDED_SURNAMES.some(s => n.includes(s))
 }
 
-// 年商レンジの代表値（万円）— 平均計算・並び順に使用
-const REVENUE_MID_MAN = [500, 2000, 4000, 7500, 20000, 65000, 200000, 650000, 3000000, 7500000, 15000000]
+// 年商レンジの代表値（万円）— 平均計算・並び順に使用（REVENUE_RANGES と同順）
+const REVENUE_MID_MAN = [500, 2000, 4000, 7500, 20000, 65000, 200000, 400000, 650000, 900000, 1500000]
 const REVENUE_MID: Record<string, number> = Object.fromEntries(REVENUE_RANGES.map((r, i) => [r, REVENUE_MID_MAN[i]]))
 
 const formatMan = (v: number) => {
