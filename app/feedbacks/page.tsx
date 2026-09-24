@@ -176,10 +176,12 @@ export default function FeedbacksPage() {
   const senderLabel = (u: UserLite) =>
     shouldHide(u) ? '匿名' : `${u.fullName ?? u.name ?? '-'}${u.company ? ` (${u.company})` : ''}`
   const senderQ = senderSearch.trim().toLowerCase()
+  // 匿名（実名非表示）はリストから除外
+  const selectableSenders = uniqueSenders.filter(u => !shouldHide(u))
   // 入力中のみ絞り込み。選択済みの表示テキストでは全件を出す（再選択できるように）
   const filteredSenders = (senderEditing && senderQ)
-    ? uniqueSenders.filter(u => senderLabel(u).toLowerCase().includes(senderQ))
-    : uniqueSenders
+    ? selectableSenders.filter(u => senderLabel(u).toLowerCase().includes(senderQ))
+    : selectableSenders
 
   // 氏名クリック → ユーザー詳細ポップアップ（ゲスト対象 or 閲覧者がゲストなら開かない）
   const handleNameClick = (u: UserLite) => {
@@ -245,6 +247,7 @@ export default function FeedbacksPage() {
             <input type="text" value={senderSearch}
               onChange={e => { setSenderSearch(e.target.value); setSenderEditing(true); setSenderListOpen(true); setSenderFilter('all') }}
               onFocus={e => { setSenderListOpen(true); setSenderEditing(false); e.target.select() }}
+              onClick={e => { setSenderListOpen(true); setSenderEditing(false); (e.target as HTMLInputElement).select() }}
               onBlur={() => setTimeout(() => setSenderListOpen(false), 150)}
               placeholder="クリックで一覧、入力で検索..."
               autoComplete="off"
