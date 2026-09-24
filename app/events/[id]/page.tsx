@@ -79,10 +79,11 @@ const FB_COLORS: Record<string, string> = {
   other: 'bg-slate-500/20 text-slate-300',
 }
 const FB_TYPE_OPTIONS = ['intro', 'feedback', 'advice', 'other'] as const
-type FbTab = 'received' | 'sent'
 
 // おせっかい種類ごとの入力項目（other は自由入力）
 interface FbField { key: string; label: string; textarea?: boolean; required?: boolean; placeholder?: string }
+// 下書き（この端末にのみ localStorage 保存）
+interface Draft { id: string; toUserId: string; toName: string; toCompany: string; type: string; fields: Record<string, string> }
 const FB_FIELDS: Record<string, FbField[]> = {
   intro: [
     { key: 'problem', label: 'お相手の課題', textarea: true, required: true, placeholder: '相手が抱えている課題' },
@@ -124,7 +125,6 @@ export default function EventDetailPage() {
   const [fb, setFb] = useState({ toUserId: '', type: 'intro' as typeof FB_TYPE_OPTIONS[number], content: '', fields: {} as Record<string, string> })
   const [savingFb, setSavingFb] = useState(false)
   const [fbSentMsg, setFbSentMsg] = useState('')
-  const [fbTab, setFbTab] = useState<FbTab>('received')
   const [fbSearch, setFbSearch] = useState('')
   const [fbListOpen, setFbListOpen] = useState(false)
 
@@ -140,42 +140,22 @@ export default function EventDetailPage() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [popupUser, setPopupUser] = useState<UserFull | null>(null)
 
-  // FB インライン編集
-  const [editingFbId, setEditingFbId] = useState<string | null>(null)
-  const [fbEditForm, setFbEditForm] = useState({ type: 'intro' as typeof FB_TYPE_OPTIONS[number], content: '' })
-  const [fbEditSaving, setFbEditSaving] = useState(false)
+  // 下書き（この端末にのみ localStorage 保存）
+  const [drafts, setDrafts] = useState<Draft[]>([])
+  const [showDrafts, setShowDrafts] = useState(false)
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null)
 
-  const startFbEdit = (f: EventDetail['feedbacks'][number]) => {
-    setEditingFbId(f.id)
-    const t = (FB_TYPE_OPTIONS.includes(f.type as typeof FB_TYPE_OPTIONS[number]) ? f.type : 'other') as typeof FB_TYPE_OPTIONS[number]
-    setFbEditForm({ type: t, content: f.content })
-  }
-
-  const cancelFbEdit = () => { setEditingFbId(null); setFbEditForm({ type: 'intro', content: '' }) }
-
-  const saveFbEdit = async () => {
-    if (!editingFbId || !fbEditForm.content.trim()) return
-    setFbEditSaving(true)
+  const draftsKey = `osekkai:drafts:${id}:${session?.dbUserId ?? ''}`
+  useEffect(() => {
+    if (!id || !session?.dbUserId) return
     try {
-      const res = await fetch(`/api/feedbacks/${editingFbId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: fbEditForm.type, content: fbEditForm.content }),
-      })
-      if (res.ok) {
-        await reload()
-        cancelFbEdit()
-      } else {
-        const text = await res.text()
-        let msg = text
-        try { msg = JSON.parse(text).error ?? text } catch {}
-        alert(`更新に失敗 (HTTP ${res.status})\n${msg}`)
-      }
-    } catch (e) {
-      alert('通信エラー: ' + (e instanceof Error ? e.message : String(e)))
-    } finally {
-      setFbEditSaving(false)
-    }
+      const raw = localStorage.getItem(`osekkai:drafts:${id}:${session.dbUserId}`)
+      setDrafts(raw ? (JSON.parse(raw) as Draft[]) : [])
+    } catch { setDrafts([]) }
+  }, [id, session?.dbUserId])
+  const persistDrafts = (next: Draft[]) => {
+    setDrafts(next)
+    try { localStorage.setItem(draftsKey, JSON.stringify(next)) } catch {}
   }
 
   const loadAllUsersOnce = async () => {
@@ -249,34 +229,68 @@ export default function EventDetailPage() {
     }
   }
 
-  // 種類ごとの入力を1つの content 文字列に組み立て
-  const buildFbContent = () => {
-    return (FB_FIELDS[fb.type] ?? [])
-      .map(d => ({ label: d.label, val: (fb.fields[d.key] ?? '').trim() }))
+  // 種類・入力から content 文字列を組み立て
+  const buildContentFor = (type: string, fields: Record<string, string>) =>
+    (FB_FIELDS[type] ?? [])
+      .map(d => ({ label: d.label, val: (fields[d.key] ?? '').trim() }))
       .filter(x => x.val)
       .map(x => `【${x.label}】${x.val}`)
       .join('\n')
+
+  // フォームの内容を下書きとして保存（送信はしない）
+  const saveAsDraft = (e?: React.FormEvent) => {
+    e?.preventDefault()
+    if (!fb.toUserId) { setFbSentMsg('⚠️ 送り先を選択してください'); return }
+    const content = buildContentFor(fb.type, fb.fields)
+    if (!content) { setFbSentMsg('⚠️ 内容を入力してください'); return }
+    const target = event?.invitees.map(i => i.user).find(u => u.id === fb.toUserId)
+    const draft: Draft = {
+      id: editingDraftId ?? `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`,
+      toUserId: fb.toUserId,
+      toName: target?.fullName ?? target?.name ?? '',
+      toCompany: target?.company ?? '',
+      type: fb.type,
+      fields: { ...fb.fields },
+    }
+    persistDrafts(editingDraftId ? drafts.map(d => (d.id === editingDraftId ? draft : d)) : [...drafts, draft])
+    setEditingDraftId(null)
+    setFb(p => ({ toUserId: p.toUserId, type: p.type, content: '', fields: {} }))
+    setFbSentMsg('✓ 下書きに保存しました（「下書き」から送信できます）')
   }
 
-  const handleFbSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!fb.toUserId) { setFbSentMsg('⚠️ 送り先を選択してください'); return }
-    const content = buildFbContent()
+  // 下書きを送信
+  const sendDraft = async (d: Draft) => {
+    const content = buildContentFor(d.type, d.fields)
     if (!content) return
-    setFbSentMsg('')
     setSavingFb(true)
     const res = await fetch('/api/feedbacks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ toUserId: fb.toUserId, type: fb.type, content, eventId: id }),
+      body: JSON.stringify({ toUserId: d.toUserId, type: d.type, content, eventId: id }),
     })
-    if (res.ok) {
-      // 送り先は保持し、入力内容だけクリア（続けて送れるようにフォームは開いたまま）
-      setFb(p => ({ toUserId: p.toUserId, type: p.type, content: '', fields: {} }))
-      setFbSentMsg('✓ 送信しました。続けて送れます。')
-      reload()
-    }
     setSavingFb(false)
+    if (res.ok) {
+      persistDrafts(drafts.filter(x => x.id !== d.id))
+      reload()
+    } else {
+      const data = await res.json().catch(() => ({}))
+      alert(data.error ?? '送信に失敗しました')
+    }
+  }
+
+  // 下書きをフォームに読み込んで編集
+  const editDraft = (d: Draft) => {
+    setFb({ toUserId: d.toUserId, type: d.type as typeof FB_TYPE_OPTIONS[number], content: '', fields: { ...d.fields } })
+    setFbSearch(`${d.toName}${d.toCompany ? ` (${d.toCompany})` : ''}`)
+    setEditingDraftId(d.id)
+    setShowDrafts(false)
+    setShowFbForm(true)
+    setFbSentMsg('')
+  }
+
+  const deleteDraft = (draftId: string) => {
+    if (!confirm('この下書きを削除しますか？')) return
+    persistDrafts(drafts.filter(x => x.id !== draftId))
   }
 
   if (status === 'loading' || loading) return <div className="flex items-center justify-center min-h-screen"><div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full" /></div>
@@ -291,10 +305,6 @@ export default function EventDetailPage() {
         (u.fullName ?? u.name ?? '').toLowerCase().includes(fbSearchQ) ||
         (u.company ?? '').toLowerCase().includes(fbSearchQ))
     : fbTargets
-
-  const receivedFbs = event.feedbacks.filter(f => f.toUser.id === session?.dbUserId)
-  const sentFbs = event.feedbacks.filter(f => f.fromUser.id === session?.dbUserId)
-  const visibleFbs = fbTab === 'received' ? receivedFbs : sentFbs
 
   const filteredEditUsers = allUsers.filter(u => {
     const q = inviteeSearch.toLowerCase()
@@ -405,28 +415,23 @@ export default function EventDetailPage() {
 
         {/* Feedbacks */}
         <div className="lg:col-span-3 space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
             <h2 className="text-lg font-semibold text-white">おせっかい</h2>
-            <button
-              onClick={() => { setShowFbForm(!showFbForm); setFbSentMsg('') }}
-              className="bg-brand-sky hover:bg-brand-sky-400 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-              disabled={fbTargets.length === 0}
-            >
-              {showFbForm ? '閉じる' : 'おせっかいを送る'}
-            </button>
-          </div>
-
-          {/* Tab switch */}
-          <div className="flex gap-2">
-            {([
-              { key: 'received', label: `自分宛 (${receivedFbs.length})` },
-              { key: 'sent', label: `自分が送った (${sentFbs.length})` },
-            ] as const).map(t => (
-              <button key={t.key} onClick={() => setFbTab(t.key)}
-                className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${fbTab === t.key ? 'bg-brand-sky text-white' : 'bg-brand-navy-800 text-slate-400 border border-brand-navy-700 hover:text-white'}`}>
-                {t.label}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { setShowDrafts(s => !s); setShowFbForm(false); setFbSentMsg('') }}
+                className="bg-brand-navy-700 hover:bg-brand-navy-900 text-slate-200 border border-brand-navy-700 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
+              >
+                {showDrafts ? '下書きを閉じる' : `下書き (${drafts.length})`}
               </button>
-            ))}
+              <button
+                onClick={() => { setShowFbForm(!showFbForm); setShowDrafts(false); setFbSentMsg(''); setEditingDraftId(null) }}
+                className="bg-brand-sky hover:bg-brand-sky-400 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+                disabled={fbTargets.length === 0}
+              >
+                {showFbForm ? '閉じる' : 'おせっかいを送る'}
+              </button>
+            </div>
           </div>
 
           {/* FB Form */}
@@ -436,7 +441,7 @@ export default function EventDetailPage() {
                 招待者がいないためおせっかいを送れません
               </div>
             ) : (
-              <form onSubmit={handleFbSubmit} className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-4 space-y-3">
+              <form onSubmit={saveAsDraft} className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-4 space-y-3">
                 <div className="relative">
                   <label className="text-slate-400 text-xs block mb-1">送り先（招待者から選択）</label>
                   <input type="text" value={fbSearch}
@@ -501,95 +506,46 @@ export default function EventDetailPage() {
                 </div>
                 {fbSentMsg && <p className={`text-xs ${fbSentMsg.startsWith('⚠️') ? 'text-red-400' : 'text-emerald-400'}`}>{fbSentMsg}</p>}
                 <div className="flex gap-2">
-                  <button type="submit" disabled={savingFb} className="bg-brand-sky hover:bg-brand-sky-400 text-white px-4 py-1.5 rounded-lg text-sm disabled:opacity-60">
-                    {savingFb ? '送信中...' : '送信'}
+                  <button type="submit" className="bg-brand-sky hover:bg-brand-sky-400 text-white px-4 py-1.5 rounded-lg text-sm">
+                    {editingDraftId ? '下書きを更新' : '下書きにする'}
                   </button>
-                  <button type="button" onClick={() => { setShowFbForm(false); setFbSentMsg('') }} className="bg-brand-navy-700 text-slate-300 px-4 py-1.5 rounded-lg text-sm">閉じる</button>
+                  <button type="button" onClick={() => { setShowFbForm(false); setFbSentMsg(''); setEditingDraftId(null) }} className="bg-brand-navy-700 text-slate-300 px-4 py-1.5 rounded-lg text-sm">閉じる</button>
                 </div>
+                <p className="text-slate-500 text-[11px]">保存した下書きは「下書き」ボタンから確認・送信できます（この端末にのみ保存されます）。</p>
               </form>
             )
           )}
 
-          {/* FB List */}
-          <div className="space-y-3">
-            {visibleFbs.length === 0 && (
-              <p className="text-slate-500 text-sm text-center py-4">
-                {fbTab === 'received' ? '自分宛のおせっかいはまだありません' : '自分が送ったおせっかいはまだありません'}
-              </p>
-            )}
-            {visibleFbs.map(f => {
-              const canEdit = f.fromUser.id === session?.dbUserId
-              const canDelete = f.fromUser.id === session?.dbUserId || isAdmin
-              const isEditing = editingFbId === f.id
-              const handleFbDelete = async () => {
-                if (!confirm('このおせっかいを削除しますか? 元に戻せません。')) return
-                const res = await fetch(`/api/feedbacks/${f.id}`, { method: 'DELETE' })
-                if (res.ok) {
-                  setEvent(ev => ev ? { ...ev, feedbacks: ev.feedbacks.filter(x => x.id !== f.id) } : ev)
-                } else {
-                  alert('削除に失敗しました')
-                }
-              }
-              return (
-                <div key={f.id} className="bg-brand-navy-800 border border-brand-navy-700 rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${FB_COLORS[f.type] ?? FB_COLORS.other}`}>{FB_LABELS[f.type] ?? 'その他'}</span>
-                    {!isEditing && (
-                      <div className="flex items-center gap-3">
-                        {canEdit && (
-                          <button onClick={() => startFbEdit(f)} className="text-blue-400 hover:text-blue-300 text-xs font-medium">編集</button>
-                        )}
-                        {canDelete && (
-                          <button onClick={handleFbDelete} className="text-red-400 hover:text-red-300 text-xs font-medium">削除</button>
-                        )}
+          {/* 下書き一覧（この端末に保存されたもの） */}
+          {showDrafts && (
+            <div className="space-y-3">
+              {drafts.length === 0 ? (
+                <div className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-4 text-slate-500 text-sm text-center">
+                  下書きはありません。「おせっかいを送る」から作成できます。
+                </div>
+              ) : (
+                drafts.map(d => (
+                  <div key={d.id} className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-4">
+                    <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+                      <div className="flex items-center gap-2 flex-wrap min-w-0">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${FB_COLORS[d.type] ?? FB_COLORS.other}`}>{FB_LABELS[d.type] ?? 'その他'}</span>
+                        <span className="text-slate-300 text-xs truncate">→ {d.toName || '（宛先未設定）'}{d.toCompany ? ` (${d.toCompany})` : ''}</span>
                       </div>
-                    )}
-                  </div>
-
-                  {isEditing ? (
-                    <div className="space-y-2">
-                      <div className="flex gap-2">
-                        {FB_TYPE_OPTIONS.map(t => (
-                          <button key={t} type="button" onClick={() => setFbEditForm(p => ({ ...p, type: t }))}
-                            className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${fbEditForm.type === t ? 'bg-brand-sky text-white' : 'bg-brand-navy-700 text-slate-400'}`}>
-                            {FB_LABELS[t]}
-                          </button>
-                        ))}
-                      </div>
-                      <textarea value={fbEditForm.content} onChange={e => setFbEditForm(p => ({ ...p, content: e.target.value }))}
-                        rows={6} className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 resize-y min-h-[140px]" />
-                      <div className="flex gap-2">
-                        <button onClick={saveFbEdit} disabled={fbEditSaving || !fbEditForm.content.trim()}
-                          className="bg-brand-sky hover:bg-brand-sky-400 disabled:opacity-60 text-white px-4 py-1.5 rounded-lg text-xs">
-                          {fbEditSaving ? '保存中...' : '保存'}
-                        </button>
-                        <button onClick={cancelFbEdit} className="bg-brand-navy-700 text-slate-300 px-4 py-1.5 rounded-lg text-xs">
-                          キャンセル
+                      <div className="flex items-center gap-3 shrink-0">
+                        <button onClick={() => editDraft(d)} className="text-blue-400 hover:text-blue-300 text-xs font-medium">編集</button>
+                        <button onClick={() => deleteDraft(d.id)} className="text-red-400 hover:text-red-300 text-xs font-medium">削除</button>
+                        <button onClick={() => sendDraft(d)} disabled={savingFb}
+                          className="bg-brand-sky hover:bg-brand-sky-400 disabled:opacity-60 text-white px-3 py-1 rounded-lg text-xs">
+                          {savingFb ? '送信中...' : '送信'}
                         </button>
                       </div>
                     </div>
-                  ) : (
-                    <div className="mb-2"><FeedbackContent content={f.content} className="text-sm" truncateUrls /></div>
-                  )}
-
-                  <div className="text-xs text-slate-500 flex items-center gap-2 flex-wrap">
-                    {f.fromUser.role === 'guest' ? (
-                      <span className="text-slate-400">匿名</span>
-                    ) : (
-                      <button onClick={() => openUserModal(f.fromUser.id)} className="text-blue-400 hover:underline">{f.fromUser.fullName ?? f.fromUser.name}</button>
-                    )}
-                    <span>→</span>
-                    {f.toUser.role === 'guest' ? (
-                      <span className="text-slate-400">匿名</span>
-                    ) : (
-                      <button onClick={() => openUserModal(f.toUser.id)} className="text-blue-400 hover:underline">{f.toUser.fullName ?? f.toUser.name}</button>
-                    )}
-                    <span className="text-slate-500">· {new Date(f.createdAt).toLocaleDateString('ja-JP')}</span>
+                    <FeedbackContent content={buildContentFor(d.type, d.fields)} className="text-xs" truncateUrls />
                   </div>
-                </div>
-              )
-            })}
-          </div>
+                ))
+              )}
+            </div>
+          )}
         </div>
       </div>
 
