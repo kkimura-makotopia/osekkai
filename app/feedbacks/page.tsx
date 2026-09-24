@@ -84,6 +84,7 @@ export default function FeedbacksPage() {
   const [senderFilter, setSenderFilter] = useState<string>('all') // 'all' | userId
   const [senderSearch, setSenderSearch] = useState('')
   const [senderListOpen, setSenderListOpen] = useState(false)
+  const [senderEditing, setSenderEditing] = useState(false) // true=入力中（絞り込み適用）
   const [openFb, setOpenFb] = useState<Feedback | null>(null)
   const [openUserId, setOpenUserId] = useState<string | null>(null)
 
@@ -175,7 +176,8 @@ export default function FeedbacksPage() {
   const senderLabel = (u: UserLite) =>
     shouldHide(u) ? '匿名' : `${u.fullName ?? u.name ?? '-'}${u.company ? ` (${u.company})` : ''}`
   const senderQ = senderSearch.trim().toLowerCase()
-  const filteredSenders = senderQ
+  // 入力中のみ絞り込み。選択済みの表示テキストでは全件を出す（再選択できるように）
+  const filteredSenders = (senderEditing && senderQ)
     ? uniqueSenders.filter(u => senderLabel(u).toLowerCase().includes(senderQ))
     : uniqueSenders
 
@@ -239,18 +241,21 @@ export default function FeedbacksPage() {
 
         <div className="relative">
           <label className="text-slate-400 text-xs block mb-1">おせっかいした人で絞り込み</label>
-          <input type="text" value={senderSearch}
-            onChange={e => { setSenderSearch(e.target.value); setSenderListOpen(true); setSenderFilter('all') }}
-            onFocus={() => setSenderListOpen(true)}
-            onBlur={() => setTimeout(() => setSenderListOpen(false), 150)}
-            placeholder="名前・会社名で検索..."
-            autoComplete="off"
-            className="w-full bg-brand-navy-800 border border-brand-navy-700 rounded-lg px-3 py-1.5 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-brand-sky" />
+          <div className="relative">
+            <input type="text" value={senderSearch}
+              onChange={e => { setSenderSearch(e.target.value); setSenderEditing(true); setSenderListOpen(true); setSenderFilter('all') }}
+              onFocus={e => { setSenderListOpen(true); setSenderEditing(false); e.target.select() }}
+              onBlur={() => setTimeout(() => setSenderListOpen(false), 150)}
+              placeholder="クリックで一覧、入力で検索..."
+              autoComplete="off"
+              className="w-full bg-brand-navy-800 border border-brand-navy-700 rounded-lg pl-3 pr-7 py-1.5 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-brand-sky" />
+            <span className={`pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-[10px] transition-transform ${senderListOpen ? 'rotate-180' : ''}`}>▼</span>
+          </div>
           {senderListOpen && (
             <ul className="absolute z-20 mt-1 w-full max-h-56 overflow-auto bg-brand-navy-800 border border-brand-navy-600 rounded-lg shadow-xl">
               <li>
                 <button type="button" onMouseDown={e => e.preventDefault()}
-                  onClick={() => { setSenderFilter('all'); setSenderSearch(''); setSenderListOpen(false) }}
+                  onClick={() => { setSenderFilter('all'); setSenderSearch(''); setSenderEditing(false); setSenderListOpen(false) }}
                   className={`w-full text-left px-3 py-2 text-xs transition-colors hover:bg-brand-navy-700 ${senderFilter === 'all' ? 'bg-brand-sky/20 text-white' : 'text-slate-200'}`}>
                   すべて
                 </button>
@@ -260,7 +265,7 @@ export default function FeedbacksPage() {
               ) : filteredSenders.map(u => (
                 <li key={u.id}>
                   <button type="button" onMouseDown={e => e.preventDefault()}
-                    onClick={() => { setSenderFilter(u.id); setSenderSearch(senderLabel(u)); setSenderListOpen(false) }}
+                    onClick={() => { setSenderFilter(u.id); setSenderSearch(senderLabel(u)); setSenderEditing(false); setSenderListOpen(false) }}
                     className={`w-full text-left px-3 py-2 text-xs transition-colors hover:bg-brand-navy-700 ${senderFilter === u.id ? 'bg-brand-sky/20 text-white' : 'text-slate-200'}`}>
                     {senderLabel(u)}
                   </button>
