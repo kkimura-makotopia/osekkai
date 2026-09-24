@@ -243,6 +243,7 @@ export default function EventDetailPage() {
     if (!fb.toUserId) { setFbSentMsg('⚠️ 送り先を選択してください'); return }
     const content = buildContentFor(fb.type, fb.fields)
     if (!content) { setFbSentMsg('⚠️ 内容を入力してください'); return }
+    const wasEditing = !!editingDraftId
     const target = event?.invitees.map(i => i.user).find(u => u.id === fb.toUserId)
     const draft: Draft = {
       id: editingDraftId ?? `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`,
@@ -255,7 +256,40 @@ export default function EventDetailPage() {
     persistDrafts(editingDraftId ? drafts.map(d => (d.id === editingDraftId ? draft : d)) : [...drafts, draft])
     setEditingDraftId(null)
     setFb(p => ({ toUserId: p.toUserId, type: p.type, content: '', fields: {} }))
-    setFbSentMsg('✓ 下書きに保存しました（「下書き」から送信できます）')
+    if (wasEditing) {
+      // 既存の下書きを更新 → 下書き一覧へ戻る
+      setShowFbForm(false)
+      setShowDrafts(true)
+      setFbSentMsg('')
+    } else {
+      setFbSentMsg('✓ 下書きに保存しました（「下書き」から送信できます）くり返し次のおせっかいを下書きにできます。')
+    }
+  }
+
+  // フォームの内容をそのまま送信（下書き編集画面から使用。編集中の下書きは送信後に削除）
+  const sendCurrentAsFeedback = async () => {
+    if (!fb.toUserId) { setFbSentMsg('⚠️ 送り先を選択してください'); return }
+    const content = buildContentFor(fb.type, fb.fields)
+    if (!content) { setFbSentMsg('⚠️ 内容を入力してください'); return }
+    setSavingFb(true)
+    const res = await fetch('/api/feedbacks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ toUserId: fb.toUserId, type: fb.type, content, eventId: id }),
+    })
+    setSavingFb(false)
+    if (res.ok) {
+      if (editingDraftId) persistDrafts(drafts.filter(d => d.id !== editingDraftId))
+      setEditingDraftId(null)
+      setFb(p => ({ toUserId: p.toUserId, type: p.type, content: '', fields: {} }))
+      setShowFbForm(false)
+      setShowDrafts(true)
+      setFbSentMsg('')
+      reload()
+    } else {
+      const data = await res.json().catch(() => ({}))
+      setFbSentMsg('⚠️ ' + (data.error ?? '送信に失敗しました'))
+    }
   }
 
   // 下書きを送信
@@ -429,7 +463,7 @@ export default function EventDetailPage() {
                 className="bg-brand-sky hover:bg-brand-sky-400 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors"
                 disabled={fbTargets.length === 0}
               >
-                {showFbForm ? '閉じる' : 'おせっかいを送る'}
+                {showFbForm ? '閉じる' : 'おせっかいを作成'}
               </button>
             </div>
           </div>
@@ -505,13 +539,28 @@ export default function EventDetailPage() {
                   ))}
                 </div>
                 {fbSentMsg && <p className={`text-xs ${fbSentMsg.startsWith('⚠️') ? 'text-red-400' : 'text-emerald-400'}`}>{fbSentMsg}</p>}
-                <div className="flex gap-2">
-                  <button type="submit" className="bg-brand-sky hover:bg-brand-sky-400 text-white px-4 py-1.5 rounded-lg text-sm">
-                    {editingDraftId ? '下書きを更新' : '下書きにする'}
-                  </button>
-                  <button type="button" onClick={() => { setShowFbForm(false); setFbSentMsg(''); setEditingDraftId(null) }} className="bg-brand-navy-700 text-slate-300 px-4 py-1.5 rounded-lg text-sm">閉じる</button>
-                </div>
-                <p className="text-slate-500 text-[11px]">保存した下書きは「下書き」ボタンから確認・送信できます（この端末にのみ保存されます）。</p>
+                {editingDraftId ? (
+                  <div className="flex gap-2 flex-wrap">
+                    <button type="button" onClick={sendCurrentAsFeedback} disabled={savingFb}
+                      className="bg-brand-sky hover:bg-brand-sky-400 disabled:opacity-60 text-white px-4 py-1.5 rounded-lg text-sm">
+                      {savingFb ? '送信中...' : 'おせっかいを送信'}
+                    </button>
+                    <button type="submit"
+                      className="bg-brand-navy-700 hover:bg-brand-navy-900 text-slate-200 border border-brand-navy-700 px-4 py-1.5 rounded-lg text-sm">
+                      下書きを更新
+                    </button>
+                    <button type="button" onClick={() => { setShowFbForm(false); setEditingDraftId(null); setFbSentMsg(''); setShowDrafts(true) }}
+                      className="bg-brand-navy-700 text-slate-300 px-4 py-1.5 rounded-lg text-sm">下書き一覧</button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex gap-2">
+                      <button type="submit" className="bg-brand-sky hover:bg-brand-sky-400 text-white px-4 py-1.5 rounded-lg text-sm">下書きにする</button>
+                      <button type="button" onClick={() => { setShowFbForm(false); setFbSentMsg(''); setEditingDraftId(null) }} className="bg-brand-navy-700 text-slate-300 px-4 py-1.5 rounded-lg text-sm">閉じる</button>
+                    </div>
+                    <p className="text-slate-500 text-[11px]">保存した下書きは「下書き」ボタンから確認・送信できます（この端末にのみ保存されます）。</p>
+                  </>
+                )}
               </form>
             )
           )}
