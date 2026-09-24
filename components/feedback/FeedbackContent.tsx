@@ -42,8 +42,11 @@ export function FeedbackContent({
   content,
   className = '',
   truncateUrls = false,
-}: { content: string; className?: string; truncateUrls?: boolean }) {
-  const lines = content.split('\n')
+  maxLines,
+}: { content: string; className?: string; truncateUrls?: boolean; maxLines?: number }) {
+  const allLines = content.split('\n')
+  const truncated = maxLines != null && allLines.length > maxLines
+  const lines = truncated ? allLines.slice(0, maxLines) : allLines
   return (
     <div className={`space-y-0.5 ${className}`}>
       {lines.map((line, idx) => {
@@ -56,6 +59,9 @@ export function FeedbackContent({
           </p>
         )
       })}
+      {truncated && (
+        <p className="text-slate-500 text-xs pt-0.5">…（続きは「詳細・コメント」で表示）</p>
+      )}
     </div>
   )
 }
