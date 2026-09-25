@@ -486,6 +486,14 @@ export default function EventDetailPage() {
             </div>
           </div>
 
+          {/* 現在表示中のビューのタイトル */}
+          <p className="text-brand-sky-400 text-sm font-bold flex items-center gap-2">
+            <span className="w-1 h-4 bg-brand-sky rounded-full inline-block" />
+            {showFbForm
+              ? (editingDraftId ? '下書きの編集' : '新規おせっかい（下書き）の作成')
+              : (panel === 'drafts' ? `下書き一覧（${drafts.length}）` : `送信済み一覧（${sentFbs.length}）`)}
+          </p>
+
           {sendDoneMsg && !showFbForm && (
             <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-sm rounded-xl px-4 py-3">
               {sendDoneMsg}
