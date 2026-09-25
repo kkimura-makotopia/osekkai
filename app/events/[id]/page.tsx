@@ -261,7 +261,8 @@ export default function EventDetailPage() {
     }
     persistDrafts(editingDraftId ? drafts.map(d => (d.id === editingDraftId ? draft : d)) : [...drafts, draft])
     setEditingDraftId(null)
-    setFb(p => ({ toUserId: p.toUserId, type: p.type, content: '', fields: {} }))
+    // 送り先・種類に加え「お相手の課題」も引き継ぐ（続けて下書きを作りやすく）
+    setFb(p => ({ toUserId: p.toUserId, type: p.type, content: '', fields: { problem: p.fields.problem ?? '' } }))
     if (wasEditing) {
       // 既存の下書きを更新 → 下書き一覧へ戻る
       setShowFbForm(false)

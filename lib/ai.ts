@@ -41,7 +41,7 @@ const PROFILE_LABELS: Record<string, string> = {
   branchCount: '拠点数',
   fiscalMonth: '決算月',
   recentRevenue: '直近確定期の売上',
-  targetRevenueScale: 'メイン商材のターゲット売上規模',
+  targetRevenueScale: 'クライアントのサービス規模',
   operatingMargin: '営業利益率',
   serviceUnitPrice: 'サービス平均単価',
   customerCount: '顧客数',

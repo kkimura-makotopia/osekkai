@@ -211,7 +211,7 @@ export function ProfileFieldsForm({ form, setForm, hideBioSns = false }: Props) 
           </select>
         </div>
         <div>
-          <FieldLabel field="targetRevenueScale">メイン商材のターゲット売上規模</FieldLabel>
+          <FieldLabel field="targetRevenueScale">クライアントのサービス規模</FieldLabel>
           <select value={form.targetRevenueScale} onChange={e => setForm(p => ({ ...p, targetRevenueScale: e.target.value }))}
             className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-brand-sky">
             <option value="">選択してください</option>
