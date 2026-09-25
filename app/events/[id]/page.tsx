@@ -127,6 +127,7 @@ export default function EventDetailPage() {
   const [fbSentMsg, setFbSentMsg] = useState('')
   const [fbSearch, setFbSearch] = useState('')
   const [fbListOpen, setFbListOpen] = useState(false)
+  const [fbEditing, setFbEditing] = useState(false) // true=入力中（絞り込み適用）
 
   // 編集モード（運営管理者のみ）
   const [editing, setEditing] = useState(false)
@@ -292,26 +293,6 @@ export default function EventDetailPage() {
     }
   }
 
-  // 下書きを送信
-  const sendDraft = async (d: Draft) => {
-    const content = buildContentFor(d.type, d.fields)
-    if (!content) return
-    setSavingFb(true)
-    const res = await fetch('/api/feedbacks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ toUserId: d.toUserId, type: d.type, content, eventId: id }),
-    })
-    setSavingFb(false)
-    if (res.ok) {
-      persistDrafts(drafts.filter(x => x.id !== d.id))
-      reload()
-    } else {
-      const data = await res.json().catch(() => ({}))
-      alert(data.error ?? '送信に失敗しました')
-    }
-  }
-
   // 下書きをフォームに読み込んで編集
   const editDraft = (d: Draft) => {
     setFb({ toUserId: d.toUserId, type: d.type as typeof FB_TYPE_OPTIONS[number], content: '', fields: { ...d.fields } })
@@ -334,7 +315,8 @@ export default function EventDetailPage() {
   const inviteeUsers: InviteeUser[] = event.invitees.map(i => i.user)
   const fbTargets = inviteeUsers.filter(u => u.id !== session?.dbUserId)
   const fbSearchQ = fbSearch.trim().toLowerCase()
-  const filteredFbTargets = fbSearchQ
+  // 入力中のみ絞り込み。選択済みの表示テキストでは全件を出す（再選択できるように）
+  const filteredFbTargets = (fbEditing && fbSearchQ)
     ? fbTargets.filter(u =>
         (u.fullName ?? u.name ?? '').toLowerCase().includes(fbSearchQ) ||
         (u.company ?? '').toLowerCase().includes(fbSearchQ))
@@ -463,7 +445,7 @@ export default function EventDetailPage() {
                 className="bg-brand-sky hover:bg-brand-sky-400 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors"
                 disabled={fbTargets.length === 0}
               >
-                {showFbForm ? '閉じる' : 'おせっかいを作成'}
+                {showFbForm ? '閉じる' : '新規おせっかい（下書き）を作成する'}
               </button>
             </div>
           </div>
@@ -479,10 +461,11 @@ export default function EventDetailPage() {
                 <div className="relative">
                   <label className="text-slate-400 text-xs block mb-1">送り先（招待者から選択）</label>
                   <input type="text" value={fbSearch}
-                    onChange={e => { setFbSearch(e.target.value); setFbListOpen(true); setFb(p => ({ ...p, toUserId: '' })) }}
-                    onFocus={() => setFbListOpen(true)}
+                    onChange={e => { setFbSearch(e.target.value); setFbEditing(true); setFbListOpen(true); setFb(p => ({ ...p, toUserId: '' })) }}
+                    onFocus={e => { setFbListOpen(true); setFbEditing(false); e.target.select() }}
+                    onClick={e => { setFbListOpen(true); setFbEditing(false); (e.target as HTMLInputElement).select() }}
                     onBlur={() => setTimeout(() => setFbListOpen(false), 150)}
-                    placeholder="名前・会社名で検索..."
+                    placeholder="クリックで一覧、入力で検索..."
                     autoComplete="off"
                     className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-1.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500" />
                   {fbListOpen && (
@@ -496,6 +479,7 @@ export default function EventDetailPage() {
                             onClick={() => {
                               setFb(p => ({ ...p, toUserId: u.id }))
                               setFbSearch(`${u.fullName ?? u.name ?? ''}${u.company ? ` (${u.company})` : ''}`)
+                              setFbEditing(false)
                               setFbListOpen(false)
                             }}
                             className={`w-full text-left px-3 py-2 text-sm transition-colors hover:bg-brand-navy-700 ${fb.toUserId === u.id ? 'bg-brand-sky/20 text-white' : 'text-slate-200'}`}>
@@ -511,7 +495,7 @@ export default function EventDetailPage() {
                   <label className="text-slate-400 text-xs block mb-1">種類</label>
                   <div className="flex gap-2">
                     {FB_TYPE_OPTIONS.map(t => (
-                      <button key={t} type="button" onClick={() => setFb(p => ({ ...p, type: t, content: '', fields: {} }))}
+                      <button key={t} type="button" onClick={() => setFb(p => ({ ...p, type: t }))}
                         className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${fb.type === t ? 'bg-brand-sky text-white' : 'bg-brand-navy-700 text-slate-400'}`}>
                         {FB_LABELS[t]}
                       </button>
@@ -521,16 +505,14 @@ export default function EventDetailPage() {
                 <div className="space-y-3">
                   {(FB_FIELDS[fb.type] ?? []).map(f => (
                     <div key={f.key}>
-                      <label className="text-slate-400 text-xs block mb-1">
-                        {f.label}{f.required && <span className="text-red-400 ml-0.5">*</span>}
-                      </label>
+                      <label className="text-slate-400 text-xs block mb-1">{f.label}</label>
                       {f.textarea ? (
-                        <textarea required={f.required} value={fb.fields[f.key] ?? ''}
+                        <textarea value={fb.fields[f.key] ?? ''}
                           onChange={e => setFb(p => ({ ...p, fields: { ...p.fields, [f.key]: e.target.value } }))}
                           rows={3} placeholder={f.placeholder}
                           className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500 resize-y" />
                       ) : (
-                        <input required={f.required} value={fb.fields[f.key] ?? ''}
+                        <input value={fb.fields[f.key] ?? ''}
                           onChange={e => setFb(p => ({ ...p, fields: { ...p.fields, [f.key]: e.target.value } }))}
                           placeholder={f.placeholder}
                           className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-1.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500" />
@@ -583,10 +565,6 @@ export default function EventDetailPage() {
                       <div className="flex items-center gap-3 shrink-0">
                         <button onClick={() => editDraft(d)} className="text-blue-400 hover:text-blue-300 text-xs font-medium">編集</button>
                         <button onClick={() => deleteDraft(d.id)} className="text-red-400 hover:text-red-300 text-xs font-medium">削除</button>
-                        <button onClick={() => sendDraft(d)} disabled={savingFb}
-                          className="bg-brand-sky hover:bg-brand-sky-400 disabled:opacity-60 text-white px-3 py-1 rounded-lg text-xs">
-                          {savingFb ? '送信中...' : '送信'}
-                        </button>
                       </div>
                     </div>
                     <FeedbackContent content={buildContentFor(d.type, d.fields)} className="text-xs" truncateUrls />
