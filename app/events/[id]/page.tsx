@@ -143,7 +143,8 @@ export default function EventDetailPage() {
 
   // 下書き（この端末にのみ localStorage 保存）
   const [drafts, setDrafts] = useState<Draft[]>([])
-  const [showDrafts, setShowDrafts] = useState(true)
+  const [panel, setPanel] = useState<'drafts' | 'sent'>('drafts')
+  const [sendDoneMsg, setSendDoneMsg] = useState('')
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null)
 
   const draftsKey = `osekkai:drafts:${id}:${session?.dbUserId ?? ''}`
@@ -264,7 +265,7 @@ export default function EventDetailPage() {
     if (wasEditing) {
       // 既存の下書きを更新 → 下書き一覧へ戻る
       setShowFbForm(false)
-      setShowDrafts(true)
+      setPanel('drafts')
       setFbSentMsg('')
     } else {
       setFbSentMsg('✓ 下書きに保存しました（「下書き」から送信できます）くり返し次のおせっかいを下書きにできます。')
@@ -289,8 +290,9 @@ export default function EventDetailPage() {
       setEditingDraftId(null)
       setFb(p => ({ toUserId: p.toUserId, type: p.type, content: '', fields: {} }))
       setShowFbForm(false)
-      setShowDrafts(true)
+      setPanel('sent')
       setFbSentMsg('')
+      setSendDoneMsg('送信完了しました。ありがとうございます！')
       reload()
     } else {
       const data = await res.json().catch(() => ({}))
@@ -303,9 +305,9 @@ export default function EventDetailPage() {
     setFb({ toUserId: d.toUserId, type: d.type as typeof FB_TYPE_OPTIONS[number], content: '', fields: { ...d.fields } })
     setFbSearch(`${d.toName}${d.toCompany ? ` (${d.toCompany})` : ''}`)
     setEditingDraftId(d.id)
-    setShowDrafts(false)
     setShowFbForm(true)
     setFbSentMsg('')
+    setSendDoneMsg('')
   }
 
   const deleteDraft = (draftId: string) => {
@@ -319,6 +321,11 @@ export default function EventDetailPage() {
   const isAdmin = session?.role === 'admin'
   const inviteeUsers: InviteeUser[] = event.invitees.map(i => i.user)
   const fbTargets = inviteeUsers.filter(u => u.id !== session?.dbUserId)
+  // 自分が送信済みのおせっかい（新しい順）
+  const sentFbs = event.feedbacks
+    .filter(f => f.fromUser.id === session?.dbUserId)
+    .slice()
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   const fbSearchQ = fbSearch.trim().toLowerCase()
   // 入力中のみ絞り込み。選択済みの表示テキストでは全件を出す（再選択できるように）
   const filteredFbTargets = (fbEditing && fbSearchQ)
@@ -438,30 +445,52 @@ export default function EventDetailPage() {
         <div className="lg:col-span-3 space-y-4">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <h2 className="text-lg font-semibold text-white">おせっかい</h2>
-            <div className="flex items-center gap-2">
-              {showFbForm && (
+            <div className="flex items-center gap-2 flex-wrap">
+              {showFbForm ? (
                 <button
-                  onClick={() => { setShowDrafts(true); setShowFbForm(false); setEditingDraftId(null); setFbSentMsg('') }}
+                  onClick={() => { setPanel('drafts'); setShowFbForm(false); setEditingDraftId(null); setFbSentMsg('') }}
                   className="bg-brand-navy-700 hover:bg-brand-navy-900 text-slate-200 border border-brand-navy-700 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
                 >
                   下書き ({drafts.length})
                 </button>
-              )}
-              {!showFbForm && (
-                <button
-                  onClick={() => {
-                    setFb({ toUserId: '', type: 'intro' as typeof FB_TYPE_OPTIONS[number], content: '', fields: {} })
-                    setFbSearch(''); setEditingDraftId(null); setFbSentMsg('')
-                    setShowFbForm(true); setShowDrafts(false)
-                  }}
-                  className="bg-brand-sky hover:bg-brand-sky-400 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-                  disabled={fbTargets.length === 0}
-                >
-                  新規おせっかい（下書き）を作成する
-                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => {
+                      setFb({ toUserId: '', type: 'intro' as typeof FB_TYPE_OPTIONS[number], content: '', fields: {} })
+                      setFbSearch(''); setEditingDraftId(null); setFbSentMsg(''); setSendDoneMsg('')
+                      setShowFbForm(true)
+                    }}
+                    className="bg-brand-sky hover:bg-brand-sky-400 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+                    disabled={fbTargets.length === 0}
+                  >
+                    新規おせっかい（下書き）を作成する
+                  </button>
+                  {panel === 'drafts' ? (
+                    <button
+                      onClick={() => { setPanel('sent'); setSendDoneMsg('') }}
+                      className="bg-brand-navy-700 hover:bg-brand-navy-900 text-slate-200 border border-brand-navy-700 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
+                    >
+                      送信済み ({sentFbs.length})
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => { setPanel('drafts'); setSendDoneMsg('') }}
+                      className="bg-brand-navy-700 hover:bg-brand-navy-900 text-slate-200 border border-brand-navy-700 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
+                    >
+                      下書き ({drafts.length})
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>
+
+          {sendDoneMsg && !showFbForm && (
+            <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-sm rounded-xl px-4 py-3">
+              {sendDoneMsg}
+            </div>
+          )}
 
           {/* FB Form */}
           {showFbForm && (
@@ -546,8 +575,6 @@ export default function EventDetailPage() {
                       className="bg-brand-navy-700 hover:bg-brand-navy-900 text-slate-200 border border-brand-navy-700 px-4 py-1.5 rounded-lg text-sm">
                       下書きを更新
                     </button>
-                    <button type="button" onClick={() => { setShowFbForm(false); setEditingDraftId(null); setFbSentMsg(''); setShowDrafts(true) }}
-                      className="bg-brand-navy-700 text-slate-300 px-4 py-1.5 rounded-lg text-sm">下書き一覧</button>
                   </div>
                 ) : (
                   <>
@@ -562,7 +589,7 @@ export default function EventDetailPage() {
           )}
 
           {/* 下書き一覧（この端末に保存されたもの） */}
-          {showDrafts && (
+          {!showFbForm && panel === 'drafts' && (
             <div className="space-y-3">
               {drafts.length === 0 ? (
                 <div className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-4 text-slate-500 text-sm text-center">
@@ -582,6 +609,30 @@ export default function EventDetailPage() {
                       </div>
                     </div>
                     <FeedbackContent content={buildContentFor(d.type, d.fields)} className="text-xs" truncateUrls />
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* 送信済みのおせっかい一覧 */}
+          {!showFbForm && panel === 'sent' && (
+            <div className="space-y-3">
+              {sentFbs.length === 0 ? (
+                <div className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-4 text-slate-500 text-sm text-center">
+                  送信したおせっかいはまだありません。
+                </div>
+              ) : (
+                sentFbs.map(f => (
+                  <div key={f.id} className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-4">
+                    <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+                      <div className="flex items-center gap-2 flex-wrap min-w-0">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${FB_COLORS[f.type] ?? FB_COLORS.other}`}>{FB_LABELS[f.type] ?? 'その他'}</span>
+                        <span className="text-slate-300 text-xs truncate">→ {f.toUser.role === 'guest' ? '匿名' : (f.toUser.fullName ?? f.toUser.name ?? '-')}{f.toUser.company ? ` (${f.toUser.company})` : ''}</span>
+                      </div>
+                      <span className="text-slate-500 text-xs shrink-0">{new Date(f.createdAt).toLocaleDateString('ja-JP')}</span>
+                    </div>
+                    <FeedbackContent content={f.content} className="text-xs" truncateUrls />
                   </div>
                 ))
               )}
