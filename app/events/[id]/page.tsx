@@ -143,7 +143,7 @@ export default function EventDetailPage() {
 
   // 下書き（この端末にのみ localStorage 保存）
   const [drafts, setDrafts] = useState<Draft[]>([])
-  const [showDrafts, setShowDrafts] = useState(false)
+  const [showDrafts, setShowDrafts] = useState(true)
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null)
 
   const draftsKey = `osekkai:drafts:${id}:${session?.dbUserId ?? ''}`
@@ -230,6 +230,10 @@ export default function EventDetailPage() {
     }
   }
 
+  // その種類の全項目が入力済みか
+  const allFieldsFilled = (type: string, fields: Record<string, string>) =>
+    (FB_FIELDS[type] ?? []).every(f => (fields[f.key] ?? '').trim() !== '')
+
   // 種類・入力から content 文字列を組み立て
   const buildContentFor = (type: string, fields: Record<string, string>) =>
     (FB_FIELDS[type] ?? [])
@@ -270,6 +274,7 @@ export default function EventDetailPage() {
   // フォームの内容をそのまま送信（下書き編集画面から使用。編集中の下書きは送信後に削除）
   const sendCurrentAsFeedback = async () => {
     if (!fb.toUserId) { setFbSentMsg('⚠️ 送り先を選択してください'); return }
+    if (!allFieldsFilled(fb.type, fb.fields)) { setFbSentMsg('⚠️ すべての項目を入力してください'); return }
     const content = buildContentFor(fb.type, fb.fields)
     if (!content) { setFbSentMsg('⚠️ 内容を入力してください'); return }
     setSavingFb(true)
@@ -435,17 +440,21 @@ export default function EventDetailPage() {
             <h2 className="text-lg font-semibold text-white">おせっかい</h2>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => { setShowDrafts(s => !s); setShowFbForm(false); setFbSentMsg('') }}
+                onClick={() => { setShowDrafts(true); setShowFbForm(false); setEditingDraftId(null); setFbSentMsg('') }}
                 className="bg-brand-navy-700 hover:bg-brand-navy-900 text-slate-200 border border-brand-navy-700 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
               >
-                {showDrafts ? '下書きを閉じる' : `下書き (${drafts.length})`}
+                下書き ({drafts.length})
               </button>
               <button
-                onClick={() => { setShowFbForm(!showFbForm); setShowDrafts(false); setFbSentMsg(''); setEditingDraftId(null) }}
+                onClick={() => {
+                  setFb({ toUserId: '', type: 'intro' as typeof FB_TYPE_OPTIONS[number], content: '', fields: {} })
+                  setFbSearch(''); setEditingDraftId(null); setFbSentMsg('')
+                  setShowFbForm(true); setShowDrafts(false)
+                }}
                 className="bg-brand-sky hover:bg-brand-sky-400 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors"
                 disabled={fbTargets.length === 0}
               >
-                {showFbForm ? '閉じる' : '新規おせっかい（下書き）を作成する'}
+                新規おせっかい（下書き）を作成する
               </button>
             </div>
           </div>
@@ -505,14 +514,16 @@ export default function EventDetailPage() {
                 <div className="space-y-3">
                   {(FB_FIELDS[fb.type] ?? []).map(f => (
                     <div key={f.key}>
-                      <label className="text-slate-400 text-xs block mb-1">{f.label}</label>
+                      <label className="text-slate-400 text-xs block mb-1">
+                        {f.label}{editingDraftId && <span className="text-red-400 ml-0.5">*</span>}
+                      </label>
                       {f.textarea ? (
-                        <textarea value={fb.fields[f.key] ?? ''}
+                        <textarea required={!!editingDraftId} value={fb.fields[f.key] ?? ''}
                           onChange={e => setFb(p => ({ ...p, fields: { ...p.fields, [f.key]: e.target.value } }))}
                           rows={3} placeholder={f.placeholder}
                           className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500 resize-y" />
                       ) : (
-                        <input value={fb.fields[f.key] ?? ''}
+                        <input required={!!editingDraftId} value={fb.fields[f.key] ?? ''}
                           onChange={e => setFb(p => ({ ...p, fields: { ...p.fields, [f.key]: e.target.value } }))}
                           placeholder={f.placeholder}
                           className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-1.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500" />
@@ -538,9 +549,8 @@ export default function EventDetailPage() {
                   <>
                     <div className="flex gap-2">
                       <button type="submit" className="bg-brand-sky hover:bg-brand-sky-400 text-white px-4 py-1.5 rounded-lg text-sm">下書きにする</button>
-                      <button type="button" onClick={() => { setShowFbForm(false); setFbSentMsg(''); setEditingDraftId(null) }} className="bg-brand-navy-700 text-slate-300 px-4 py-1.5 rounded-lg text-sm">閉じる</button>
                     </div>
-                    <p className="text-slate-500 text-[11px]">保存した下書きは「下書き」ボタンから確認・送信できます（この端末にのみ保存されます）。</p>
+                    <p className="text-slate-500 text-[11px]">保存した下書きは上部の「下書き」ボタンから確認・送信できます（この端末にのみ保存されます）。</p>
                   </>
                 )}
               </form>
