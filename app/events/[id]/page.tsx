@@ -439,23 +439,27 @@ export default function EventDetailPage() {
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <h2 className="text-lg font-semibold text-white">おせっかい</h2>
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => { setShowDrafts(true); setShowFbForm(false); setEditingDraftId(null); setFbSentMsg('') }}
-                className="bg-brand-navy-700 hover:bg-brand-navy-900 text-slate-200 border border-brand-navy-700 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
-              >
-                下書き ({drafts.length})
-              </button>
-              <button
-                onClick={() => {
-                  setFb({ toUserId: '', type: 'intro' as typeof FB_TYPE_OPTIONS[number], content: '', fields: {} })
-                  setFbSearch(''); setEditingDraftId(null); setFbSentMsg('')
-                  setShowFbForm(true); setShowDrafts(false)
-                }}
-                className="bg-brand-sky hover:bg-brand-sky-400 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-                disabled={fbTargets.length === 0}
-              >
-                新規おせっかい（下書き）を作成する
-              </button>
+              {showFbForm && (
+                <button
+                  onClick={() => { setShowDrafts(true); setShowFbForm(false); setEditingDraftId(null); setFbSentMsg('') }}
+                  className="bg-brand-navy-700 hover:bg-brand-navy-900 text-slate-200 border border-brand-navy-700 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
+                >
+                  下書き ({drafts.length})
+                </button>
+              )}
+              {!showFbForm && (
+                <button
+                  onClick={() => {
+                    setFb({ toUserId: '', type: 'intro' as typeof FB_TYPE_OPTIONS[number], content: '', fields: {} })
+                    setFbSearch(''); setEditingDraftId(null); setFbSentMsg('')
+                    setShowFbForm(true); setShowDrafts(false)
+                  }}
+                  className="bg-brand-sky hover:bg-brand-sky-400 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+                  disabled={fbTargets.length === 0}
+                >
+                  新規おせっかい（下書き）を作成する
+                </button>
+              )}
             </div>
           </div>
 
@@ -562,7 +566,7 @@ export default function EventDetailPage() {
             <div className="space-y-3">
               {drafts.length === 0 ? (
                 <div className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-4 text-slate-500 text-sm text-center">
-                  下書きはありません。「おせっかいを送る」から作成できます。
+                  下書きはありません。「新規おせっかい（下書き）を作成する」から作成できます。
                 </div>
               ) : (
                 drafts.map(d => (
