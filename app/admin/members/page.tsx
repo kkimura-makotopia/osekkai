@@ -14,11 +14,19 @@ interface User {
   industry: string | null
   employeeCount: number | null
   foundingYear: number | null
+  fullTimeEmployees: number | null
+  branchCount: number | null
+  fiscalMonth: number | null
   recentRevenue: string | null
+  targetRevenueScale: string | null
   operatingMargin: string | null
   serviceUnitPrice: string | null
+  serviceBreakdown: { name?: string; percentage?: number }[] | null
   customerCount: string | null
+  revenueGrowth: string | null
   revenueTarget3y: string | null
+  marketingChannels: string[] | null
+  snsLinks: Record<string, string> | null
   bio: string | null
   businessSummary: string | null
   role: string
@@ -110,10 +118,19 @@ export default function AdminMembersPage() {
   }
 
   const exportCsv = () => {
+    const fmtMonth = (v: number | null) => (v != null ? `${v}月` : '')
+    const fmtChannels = (v: string[] | null) => (Array.isArray(v) ? v.join(' / ') : '')
+    const fmtBreakdown = (v: { name?: string; percentage?: number }[] | null) =>
+      Array.isArray(v) ? v.filter(it => it && it.name).map(it => `${it.name} ${it.percentage ?? 0}%`).join(' / ') : ''
+    const fmtSns = (v: Record<string, string> | null) =>
+      v && typeof v === 'object' ? Object.entries(v).filter(([, url]) => url).map(([k, url]) => `${k}: ${url}`).join(' / ') : ''
+
     const headers = [
-      '氏名', 'メール', '会社名', '役職', '業界', '従業員数', '設立年',
-      '売上規模(直近確定期)', '営業利益率', 'サービス平均単価', '顧客数', '3年後の売上目標',
-      'ロール', 'おせっかい受取', 'おせっかい送信', '経歴・プロフィール', '事業内容サマリ',
+      '氏名', 'メール', '会社名', '役職', '業界', '従業員数(業務委託なども含む)', '設立年', '正社員数', '拠点数', '決算月',
+      '直近の確定している期の売上', 'クライアントの平均売上規模', '営業利益率', 'サービス平均単価', '顧客数',
+      '3年前からの売上成長率', '3年後の売上目標', 'サービスの売上構成比', 'マーケティングチャネル',
+      '経歴・プロフィール', '事業内容サマリ', 'SNSリンク',
+      'ロール', 'おせっかい受取', 'おせっかい送信', '交流会作成数', '登録日',
       '提出イベント', '経営課題',
     ]
     const rows = users.map(u => {
@@ -124,10 +141,13 @@ export default function AdminMembersPage() {
         .join('\n')
       return [
         u.fullName ?? u.name ?? '', u.email, u.company ?? '', u.jobTitle ?? '', u.industry ?? '',
-        u.employeeCount ?? '', u.foundingYear ?? '', u.recentRevenue ?? '', u.operatingMargin ?? '',
-        u.serviceUnitPrice ?? '', u.customerCount ?? '', u.revenueTarget3y ?? '',
-        ROLE_LABELS[u.role] ?? u.role, u._count.receivedFeedbacks, u._count.sentFeedbacks,
-        u.bio ?? '', u.businessSummary ?? '', events, issues,
+        u.employeeCount ?? '', u.foundingYear ?? '', u.fullTimeEmployees ?? '', u.branchCount ?? '', fmtMonth(u.fiscalMonth),
+        u.recentRevenue ?? '', u.targetRevenueScale ?? '', u.operatingMargin ?? '', u.serviceUnitPrice ?? '', u.customerCount ?? '',
+        u.revenueGrowth ?? '', u.revenueTarget3y ?? '', fmtBreakdown(u.serviceBreakdown), fmtChannels(u.marketingChannels),
+        u.bio ?? '', u.businessSummary ?? '', fmtSns(u.snsLinks),
+        ROLE_LABELS[u.role] ?? u.role, u._count.receivedFeedbacks, u._count.sentFeedbacks, u._count.createdEvents,
+        new Date(u.createdAt).toLocaleDateString('ja-JP'),
+        events, issues,
       ]
     })
     const csv = [headers, ...rows].map(r => r.map(csvCell).join(',')).join('\r\n')
@@ -135,7 +155,7 @@ export default function AdminMembersPage() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `会員_経営課題_${new Date().toISOString().slice(0, 10)}.csv`
+    a.download = `会員_登録情報_経営課題_${new Date().toISOString().slice(0, 10)}.csv`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -160,7 +180,7 @@ export default function AdminMembersPage() {
             onClick={exportCsv}
             className="bg-brand-sky hover:bg-brand-sky-400 text-white text-sm font-medium px-4 py-2 rounded-xl shrink-0"
           >
-            CSV出力（登録情報＋経営課題）
+            CSV出力（全登録情報＋経営課題）
           </button>
           <input
             type="text"
