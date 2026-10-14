@@ -20,6 +20,7 @@ export default function EventsPage() {
   const router = useRouter()
   const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
+  const [showPast, setShowPast] = useState(false)
 
   useEffect(() => {
     if (status === 'unauthenticated') { router.push('/login'); return }
@@ -81,12 +82,18 @@ export default function EventsPage() {
 
       {past.length > 0 && (
         <div>
-          <h2 className="text-sm font-bold text-slate-500 tracking-wider mb-4 flex items-center gap-2 uppercase">
-            <span className="w-8 h-0.5 bg-slate-600 rounded-full inline-block" />過去のイベント
-          </h2>
-          <div className="space-y-4">
-            {past.map(ev => <EventCard key={ev.id} event={ev} upcoming={false} locked={isGuest} />)}
-          </div>
+          <button onClick={() => setShowPast(v => !v)}
+            className="w-full flex items-center justify-between mb-4 group">
+            <span className="text-sm font-bold text-slate-500 tracking-wider flex items-center gap-2 uppercase group-hover:text-slate-300 transition-colors">
+              <span className="w-8 h-0.5 bg-slate-600 rounded-full inline-block" />過去のイベント（{past.length}）
+            </span>
+            <span className={`text-slate-500 text-xs transition-transform ${showPast ? 'rotate-180' : ''}`}>▼</span>
+          </button>
+          {showPast && (
+            <div className="space-y-4">
+              {past.map(ev => <EventCard key={ev.id} event={ev} upcoming={false} locked={isGuest} />)}
+            </div>
+          )}
         </div>
       )}
     </div>

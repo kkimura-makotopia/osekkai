@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { REVENUE_RANGES } from '@/lib/profileOptions'
 import { JOB_TITLES } from '@/lib/jobTitles'
-import { ISSUE_CATEGORIES } from '@/lib/issueOptions'
+import { ISSUE_CATEGORIES, REQUEST_TYPES } from '@/lib/issueOptions'
 
 interface UserRow {
   id: string
@@ -23,7 +23,7 @@ interface FeedbackRow { id: string; fromUser: { id: string } }
 interface SubmissionRow {
   id: string
   user: { id: string; fullName: string | null; name: string | null; role: string }
-  issues: { category: string }[]
+  issues: { category: string; requestType: string | null }[]
 }
 
 // 集計から除外する運営スタッフの姓 ＋ ゲスト
@@ -43,6 +43,14 @@ const formatMan = (v: number) => {
   if (v <= 0) return '—'
   if (v >= 10000) return `約${(v / 10000).toFixed(v / 10000 >= 10 ? 0 : 1)}億円`
   return `約${Math.round(v).toLocaleString()}万円`
+}
+
+// 中央値（数値配列）
+const median = (arr: number[]) => {
+  if (!arr.length) return 0
+  const s = [...arr].sort((a, b) => a - b)
+  const m = Math.floor(s.length / 2)
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2
 }
 
 export default function AdminPage() {
@@ -96,19 +104,23 @@ export default function AdminPage() {
 
   // 集計対象の会員（運営スタッフ・ゲストを除外）
   const statUsers = users.filter(u => !isExcluded(u))
+  // 正会員のみ（運営スタッフ・ゲスト・運営管理者を除外）
+  const memberUsers = statUsers.filter(u => u.role === 'member')
   const userById = new Map(users.map(u => [u.id, u]))
 
-  // 平均年商規模
-  const usersWithRev = statUsers.filter(u => u.recentRevenue && REVENUE_MID[u.recentRevenue] != null)
-  const avgRevenueMan = usersWithRev.length
-    ? usersWithRev.reduce((s, u) => s + REVENUE_MID[u.recentRevenue!], 0) / usersWithRev.length
-    : 0
+  // 正会員の年商規模（平均・中央値）
+  const revVals = memberUsers
+    .filter(u => u.recentRevenue && REVENUE_MID[u.recentRevenue] != null)
+    .map(u => REVENUE_MID[u.recentRevenue!])
+  const avgRevenueMan = revVals.length ? revVals.reduce((s, v) => s + v, 0) / revVals.length : 0
+  const medRevenueMan = median(revVals)
 
-  // 平均従業員数
-  const usersWithEmp = statUsers.filter(u => typeof u.employeeCount === 'number')
-  const avgEmp = usersWithEmp.length
-    ? Math.round(usersWithEmp.reduce((s, u) => s + (u.employeeCount ?? 0), 0) / usersWithEmp.length)
-    : 0
+  // 正会員の従業員数（平均・中央値）
+  const empVals = memberUsers
+    .filter(u => typeof u.employeeCount === 'number')
+    .map(u => u.employeeCount as number)
+  const avgEmp = empVals.length ? Math.round(empVals.reduce((s, v) => s + v, 0) / empVals.length) : 0
+  const medEmp = median(empVals)
 
   // 役職別割合
   const jobDist = [...JOB_TITLES, '未設定'].map(job => ({
@@ -122,6 +134,11 @@ export default function AdminPage() {
   const categoryDist = ISSUE_CATEGORIES.map(cat => ({
     label: cat,
     value: allIssues.filter(i => i.category === cat).length,
+  })).filter(d => d.value > 0)
+  // 経営課題の種別（型）割合
+  const requestTypeDist = REQUEST_TYPES.map(rt => ({
+    label: rt,
+    value: allIssues.filter(i => i.requestType === rt).length,
   })).filter(d => d.value > 0)
 
   // 年商別の参加社数割合（対象会員1名=1社としてカウント）
@@ -188,10 +205,12 @@ export default function AdminPage() {
         ))}
       </div>
 
-      {/* 平均値カード */}
+      {/* 平均値カード（正会員のみ・平均/中央値） */}
       <div className="grid grid-cols-2 gap-4 mb-4">
-        <StatCard label="会員の平均年商規模" value={formatMan(avgRevenueMan)} sub={`${usersWithRev.length}名の登録から算出`} />
-        <StatCard label="会員の平均従業員数" value={usersWithEmp.length ? `${avgEmp.toLocaleString()}名` : '—'} sub={`${usersWithEmp.length}名の登録から算出`} />
+        <StatCard label="正会員の年商規模（平均）" value={formatMan(avgRevenueMan)}
+          sub={`中央値 ${formatMan(medRevenueMan)}／正会員${revVals.length}名から算出`} />
+        <StatCard label="正会員の従業員数（平均）" value={empVals.length ? `${avgEmp.toLocaleString()}名` : '—'}
+          sub={`中央値 ${empVals.length ? `${medEmp.toLocaleString()}名` : '—'}／正会員${empVals.length}名から算出`} />
       </div>
 
       {/* 分布 */}
@@ -199,6 +218,7 @@ export default function AdminPage() {
         <DistCard title="会員の役職別の割合" items={jobDist} total={jobDist.reduce((s, d) => s + d.value, 0)} unit="名" color="bg-brand-sky" />
         <DistCard title="年商別の参加社数割合" items={companyByRevenue} total={companyByRevenue.reduce((s, d) => s + d.value, 0)} unit="社" color="bg-indigo-500" />
         <DistCard title="経営課題のカテゴリ割合" items={categoryDist} total={issueCount} unit="件" color="bg-emerald-500" />
+        <DistCard title="経営課題の種別（型）割合" items={requestTypeDist} total={issueCount} unit="件" color="bg-rose-500" />
         <DistCard title="企業年商別のおせっかいを出した数" items={feedbackByRevenue} total={eligibleFeedbacks.length} unit="件" color="bg-amber-500" className="md:col-span-2" />
       </div>
     </div>
