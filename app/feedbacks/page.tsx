@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { FeedbackContent } from '@/components/feedback/FeedbackContent'
+import { AddFeedbackModal } from '@/components/feedback/AddFeedbackModal'
 
 interface UserLite {
   id: string
@@ -65,7 +66,7 @@ const SNS_LABELS: Record<string, string> = {
   website: 'Webサイト',
 }
 
-type Tab = 'received' | 'others'
+type Tab = 'received' | 'sent' | 'others'
 type FbFilter = 'all' | 'intro' | 'feedback' | 'advice' | 'other'
 
 const isGuestUser = (u: { role?: string } | null | undefined) => u?.role === 'guest'
@@ -87,24 +88,28 @@ export default function FeedbacksPage() {
   const [senderEditing, setSenderEditing] = useState(false) // true=入力中（絞り込み適用）
   const [openFb, setOpenFb] = useState<Feedback | null>(null)
   const [openUserId, setOpenUserId] = useState<string | null>(null)
+  const [showAdd, setShowAdd] = useState(false)
+
+  const loadFeedbacks = async () => {
+    try {
+      const fbRes = await fetch('/api/feedbacks')
+      if (fbRes.ok) {
+        const t = await fbRes.text()
+        const d = t ? JSON.parse(t) : []
+        if (Array.isArray(d)) setFeedbacks(d)
+      }
+    } catch (e) {
+      console.warn('feedbacks fetch failed', e)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
     if (status === 'unauthenticated') { router.push('/login'); return }
     if (status !== 'authenticated') return
-    ;(async () => {
-      try {
-        const fbRes = await fetch('/api/feedbacks')
-        if (fbRes.ok) {
-          const t = await fbRes.text()
-          const d = t ? JSON.parse(t) : []
-          if (Array.isArray(d)) setFeedbacks(d)
-        }
-      } catch (e) {
-        console.warn('feedbacks fetch failed', e)
-      } finally {
-        setLoading(false)
-      }
-    })()
+    loadFeedbacks()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, router])
 
   // 氏名クリック時に1会員の公開プロフィールを取得（一覧は取得しない）
@@ -131,6 +136,7 @@ export default function FeedbacksPage() {
     return viewerIsGuest || u.role === 'guest'
   }
   const received = feedbacks.filter(f => f.toUser.id === myId)
+  const sent = feedbacks.filter(f => f.fromUser.id === myId)
   const others = feedbacks.filter(f => f.fromUser.id !== myId && f.toUser.id !== myId)
 
   const handleDelete = async (id: string) => {
@@ -147,7 +153,7 @@ export default function FeedbacksPage() {
     }
   }
 
-  const visibleAll = tab === 'received' ? received : others
+  const visibleAll = tab === 'received' ? received : tab === 'sent' ? sent : others
   const byType = filter === 'all' ? visibleAll : visibleAll.filter(f => f.type === filter)
   const byEvent = eventFilter === 'all' ? byType : byType.filter(f => f.event?.id === eventFilter)
   const visible = senderFilter === 'all' ? byEvent : byEvent.filter(f => f.fromUser.id === senderFilter)
@@ -192,15 +198,24 @@ export default function FeedbacksPage() {
   // フィードバックモーダル内で氏名がクリックされた時はFBモーダルを閉じない（ユーザーモーダルを重ねる）
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">おせっかい一覧</h1>
-        <p className="text-slate-400 mt-1 text-sm">自分宛のおせっかいと、他のメンバー間で交わされたおせっかいを参照できます</p>
+      <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-white">おせっかい一覧</h1>
+          <p className="text-slate-400 mt-1 text-sm">自分宛のおせっかいと、他のメンバー間で交わされたおせっかいを参照できます</p>
+        </div>
+        {!viewerIsGuest && (
+          <button onClick={() => setShowAdd(true)}
+            className="bg-brand-sky hover:bg-brand-sky-400 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors shrink-0">
+            ＋ おせっかいを追加
+          </button>
+        )}
       </div>
 
       {/* タブ */}
       <div className="flex gap-2 mb-4">
         {([
           { key: 'received', label: '受け取ったおせっかい', count: received.length },
+          { key: 'sent', label: '自分が送った', count: sent.length },
           { key: 'others', label: '他の人のおせっかい', count: others.length },
         ] as const).map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
@@ -281,7 +296,7 @@ export default function FeedbacksPage() {
 
       {visible.length === 0 ? (
         <div className="text-center py-16 text-slate-500">
-          {tab === 'received' ? 'まだ受け取ったおせっかいがありません' : '他の人のおせっかいはまだありません'}
+          {tab === 'received' ? 'まだ受け取ったおせっかいがありません' : tab === 'sent' ? 'まだ送ったおせっかいがありません' : '他の人のおせっかいはまだありません'}
         </div>
       ) : (
         <div className="space-y-3">
@@ -453,6 +468,10 @@ export default function FeedbacksPage() {
           </div>
         )
       })()}
+
+      {showAdd && (
+        <AddFeedbackModal onClose={() => setShowAdd(false)} onCreated={() => { loadFeedbacks(); setTab('sent') }} />
+      )}
     </div>
   )
 }

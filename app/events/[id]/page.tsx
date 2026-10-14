@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { FeedbackContent } from '@/components/feedback/FeedbackContent'
+import { FB_FIELDS } from '@/lib/feedbackOptions'
 
 interface InviteeUser {
   id: string
@@ -80,8 +81,6 @@ const FB_COLORS: Record<string, string> = {
 }
 const FB_TYPE_OPTIONS = ['intro', 'feedback', 'advice', 'other'] as const
 
-// おせっかい種類ごとの入力項目（other は自由入力）
-interface FbField { key: string; label: string; textarea?: boolean; required?: boolean; placeholder?: string }
 // 下書き（この端末にのみ localStorage 保存）
 interface Draft { id: string; toUserId: string; toName: string; toCompany: string; type: string; fields: Record<string, string> }
 
@@ -121,30 +120,6 @@ const NOTES: { heading: string; body: string[] }[] = [
     ],
   },
 ]
-const FB_FIELDS: Record<string, FbField[]> = {
-  intro: [
-    { key: 'problem', label: 'お相手の課題', textarea: true, required: true, placeholder: '相手が抱えている課題' },
-    { key: 'company', label: '紹介したい企業の会社名', required: true, placeholder: '例：株式会社XX' },
-    { key: 'name', label: '紹介したい企業に所属する担当者名', required: true, placeholder: '例：おせっかい 太郎' },
-    { key: 'reason', label: '紹介理由', textarea: true, required: true, placeholder: 'なぜこの方を紹介したいか' },
-  ],
-  feedback: [
-    { key: 'problem', label: 'お相手の課題', textarea: true, required: true, placeholder: '相手が抱えている課題' },
-    { key: 'service', label: '紹介したい会社（サービス）名', required: true, placeholder: '例：株式会社XX（サービス名）' },
-    { key: 'reason', label: '紹介理由', textarea: true, required: true, placeholder: 'なぜこのサービスを紹介したいか' },
-    { key: 'url', label: 'URL', placeholder: 'https://...' },
-  ],
-  advice: [
-    { key: 'problem', label: 'お相手の課題', textarea: true, required: true, placeholder: '相手が抱えている課題' },
-    { key: 'knowledge', label: 'ナレッジ内容', textarea: true, required: true, placeholder: '共有したい知見・ノウハウ' },
-    { key: 'url', label: '参考URL', placeholder: 'https://...' },
-  ],
-  other: [
-    { key: 'problem', label: 'お相手の課題', textarea: true, required: true, placeholder: '相手が抱えている課題' },
-    { key: 'content', label: '内容', textarea: true, required: true, placeholder: '協業提案やコミュニティ・交流会のお誘い等' },
-  ],
-}
-
 // yyyy-mm-ddThh:mm 形式（datetime-local 用）
 const toDatetimeLocal = (iso: string) => {
   const d = new Date(iso)
@@ -317,6 +292,7 @@ export default function EventDetailPage() {
     if (!allFieldsFilled(fb.type, fb.fields)) { setFbSentMsg('⚠️ すべての項目を入力してください'); return }
     const content = buildContentFor(fb.type, fb.fields)
     if (!content) { setFbSentMsg('⚠️ 内容を入力してください'); return }
+    if (!confirm('送信していいですか？\n送信するとお相手に届きます。')) return
     setSavingFb(true)
     const res = await fetch('/api/feedbacks', {
       method: 'POST',
@@ -360,6 +336,7 @@ export default function EventDetailPage() {
       alert('未入力の項目があります。「編集」から入力して送信してください。')
       return
     }
+    if (!confirm('送信していいですか？\n送信するとお相手に届きます。')) return
     const content = buildContentFor(d.type, d.fields)
     if (!content) return
     setSavingFb(true)
