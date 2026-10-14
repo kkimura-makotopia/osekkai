@@ -269,9 +269,9 @@ export default function EventDetailPage() {
     }
   }
 
-  // その種類の全項目が入力済みか
+  // その種類の全項目が入力済みか（URL は任意なので除外）
   const allFieldsFilled = (type: string, fields: Record<string, string>) =>
-    (FB_FIELDS[type] ?? []).every(f => (fields[f.key] ?? '').trim() !== '')
+    (FB_FIELDS[type] ?? []).filter(f => f.key !== 'url').every(f => (fields[f.key] ?? '').trim() !== '')
 
   // 種類・入力から content 文字列を組み立て
   const buildContentFor = (type: string, fields: Record<string, string>) =>
@@ -329,7 +329,7 @@ export default function EventDetailPage() {
       setEditingDraftId(null)
       setFb(p => ({ toUserId: p.toUserId, type: p.type, content: '', fields: {} }))
       setShowFbForm(false)
-      setPanel('sent')
+      setPanel('drafts')
       setFbSentMsg('')
       setSendDoneMsg('送信完了しました。ありがとうございます！')
       reload()
@@ -352,6 +352,31 @@ export default function EventDetailPage() {
   const deleteDraft = (draftId: string) => {
     if (!confirm('この下書きを削除しますか？')) return
     persistDrafts(drafts.filter(x => x.id !== draftId))
+  }
+
+  // 下書き一覧から直接送信（未入力があれば編集へ誘導）
+  const sendDraftFromList = async (d: Draft) => {
+    if (!allFieldsFilled(d.type, d.fields)) {
+      alert('未入力の項目があります。「編集」から入力して送信してください。')
+      return
+    }
+    const content = buildContentFor(d.type, d.fields)
+    if (!content) return
+    setSavingFb(true)
+    const res = await fetch('/api/feedbacks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ toUserId: d.toUserId, type: d.type, content, eventId: id }),
+    })
+    setSavingFb(false)
+    if (res.ok) {
+      persistDrafts(drafts.filter(x => x.id !== d.id))
+      setSendDoneMsg('送信完了しました。ありがとうございます！')
+      reload()
+    } else {
+      const data = await res.json().catch(() => ({}))
+      alert(data.error ?? '送信に失敗しました')
+    }
   }
 
   if (status === 'loading' || loading) return <div className="flex items-center justify-center min-h-screen"><div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full" /></div>
@@ -390,13 +415,13 @@ export default function EventDetailPage() {
           <p className="text-white/80 text-[11px] font-bold tracking-[2px] mb-1">WELCOME</p>
           <h1 className="text-2xl font-bold text-white leading-tight">{event.title}</h1>
           <div className="text-white/90 text-sm mt-3 space-y-0.5">
-            <p>📅 {new Date(event.heldAt).toLocaleString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' })}</p>
-            {event.location && <p>📍 {event.location}</p>}
+            <p>{new Date(event.heldAt).toLocaleString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+            {event.location && <p>{event.location}</p>}
           </div>
         </div>
 
         <div className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-5 mb-5">
-          <h2 className="text-white font-semibold mb-1 flex items-center gap-2"><span>🗓️</span> 当日のプログラム</h2>
+          <h2 className="text-white font-semibold mb-1">当日のプログラム</h2>
           <p className="text-slate-500 text-xs mb-4">全体 140分 ＋ バッファ10分</p>
           <ol className="space-y-3">
             {PROGRAM.map((p, i) => (
@@ -422,7 +447,7 @@ export default function EventDetailPage() {
         </div>
 
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-5 mb-6">
-          <h2 className="text-amber-300 font-semibold mb-3 flex items-center gap-2"><span>⚠️</span> 注意事項</h2>
+          <h2 className="text-amber-300 font-semibold mb-3">注意事項</h2>
           <p className="text-slate-300 text-sm leading-relaxed mb-4">{NOTES_INTRO}</p>
           <div className="space-y-4">
             {NOTES.map((n, i) => (
@@ -474,11 +499,6 @@ export default function EventDetailPage() {
                 <input value={editForm.location} onChange={e => setEditForm(p => ({ ...p, location: e.target.value }))}
                   className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
               </div>
-              <div>
-                <label className="text-slate-400 text-xs block mb-1">概要</label>
-                <input value={editForm.description} onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))}
-                  className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
-              </div>
             </div>
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -509,13 +529,12 @@ export default function EventDetailPage() {
             <div>
               <p className="text-blue-400 text-sm mb-1">{new Date(event.heldAt).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}</p>
               <h1 className="text-2xl font-bold text-white">{event.title}</h1>
-              {event.location && <p className="text-slate-400 mt-1">📍 {event.location}</p>}
-              {event.description && <p className="text-slate-400 mt-2 text-sm">{event.description}</p>}
+              {event.location && <p className="text-slate-400 mt-1">{event.location}</p>}
             </div>
             <div className="flex items-center gap-3">
               <button onClick={() => setShowWelcome(true)}
                 className="inline-flex items-center gap-1.5 bg-brand-sky/15 hover:bg-brand-sky/25 border border-brand-sky/30 text-brand-sky-400 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors">
-                📋 プログラム
+                本日のプログラムを見る
               </button>
               {isAdmin && (
                 <button onClick={startEdit} className="bg-brand-navy-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-sm">編集</button>
@@ -667,15 +686,15 @@ export default function EventDetailPage() {
                   {(FB_FIELDS[fb.type] ?? []).map(f => (
                     <div key={f.key}>
                       <label className="text-slate-400 text-xs block mb-1">
-                        {f.label}{editingDraftId && <span className="text-red-400 ml-0.5">*</span>}
+                        {f.label}{editingDraftId && f.key !== 'url' && <span className="text-red-400 ml-0.5">*</span>}
                       </label>
                       {f.textarea ? (
-                        <textarea required={!!editingDraftId} value={fb.fields[f.key] ?? ''}
+                        <textarea required={!!editingDraftId && f.key !== 'url'} value={fb.fields[f.key] ?? ''}
                           onChange={e => setFb(p => ({ ...p, fields: { ...p.fields, [f.key]: e.target.value } }))}
                           rows={3} placeholder={f.placeholder}
                           className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500 resize-y" />
                       ) : (
-                        <input required={!!editingDraftId} value={fb.fields[f.key] ?? ''}
+                        <input required={!!editingDraftId && f.key !== 'url'} value={fb.fields[f.key] ?? ''}
                           onChange={e => setFb(p => ({ ...p, fields: { ...p.fields, [f.key]: e.target.value } }))}
                           placeholder={f.placeholder}
                           className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-lg px-3 py-1.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500" />
@@ -724,6 +743,10 @@ export default function EventDetailPage() {
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
                         <button onClick={() => editDraft(d)} className="text-blue-400 hover:text-blue-300 text-xs font-medium">編集</button>
+                        <button onClick={() => sendDraftFromList(d)} disabled={savingFb}
+                          className="bg-brand-sky hover:bg-brand-sky-400 disabled:opacity-60 text-white px-3 py-1 rounded-lg text-xs">
+                          {savingFb ? '送信中...' : '送信'}
+                        </button>
                         <button onClick={() => deleteDraft(d.id)} className="text-red-400 hover:text-red-300 text-xs font-medium">削除</button>
                       </div>
                     </div>

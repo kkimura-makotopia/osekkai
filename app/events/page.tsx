@@ -42,8 +42,11 @@ export default function EventsPage() {
   if (status === 'loading' || loading) return <div className="flex items-center justify-center min-h-screen"><div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full" /></div>
 
   const isGuest = session?.role === 'guest'
-  const upcoming = events.filter(e => new Date(e.heldAt) >= new Date())
-  const past = events.filter(e => new Date(e.heldAt) < new Date())
+  // 過去かどうかは「開催日」で判断（当日は時刻に関わらず開催予定扱い）
+  const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0)
+  const eventDay = (iso: string) => { const d = new Date(iso); d.setHours(0, 0, 0, 0); return d }
+  const upcoming = events.filter(e => eventDay(e.heldAt) >= startOfToday)
+  const past = events.filter(e => eventDay(e.heldAt) < startOfToday)
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -61,7 +64,6 @@ export default function EventsPage() {
 
       {events.length === 0 && (
         <div className="text-center py-20 text-slate-500">
-          <div className="text-5xl mb-4">📅</div>
           <p>まだイベントがありません</p>
         </div>
       )}
@@ -113,18 +115,18 @@ function EventCard({ event, upcoming, locked }: { event: Event; upcoming: boolea
         </div>
         <div className="flex items-center gap-3 mt-1.5 text-sm text-slate-400 flex-wrap">
           <span>{date.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}</span>
-          {event.location && <span className="truncate">📍 {event.location}</span>}
+          {event.location && <span className="truncate">{event.location}</span>}
         </div>
         <div className="flex items-center gap-2 mt-3 flex-wrap">
-          <span className="text-[11px] text-slate-400 bg-brand-navy-900/60 border border-brand-navy-700 px-2.5 py-1 rounded-full">👥 参加者 {event.invitees?.length ?? 0}名</span>
-          <span className="text-[11px] text-slate-400 bg-brand-navy-900/60 border border-brand-navy-700 px-2.5 py-1 rounded-full">💬 おせっかい {event._count.feedbacks}件</span>
+          <span className="text-[11px] text-slate-400 bg-brand-navy-900/60 border border-brand-navy-700 px-2.5 py-1 rounded-full">参加者 {event.invitees?.length ?? 0}名</span>
+          <span className="text-[11px] text-slate-400 bg-brand-navy-900/60 border border-brand-navy-700 px-2.5 py-1 rounded-full">おせっかい {event._count.feedbacks}件</span>
         </div>
       </div>
 
       {/* 右端 */}
-      <div className={`shrink-0 text-xl transition-colors ${locked ? 'text-slate-600' : 'text-slate-600 group-hover:text-brand-sky-400'}`}>
-        {locked ? '🔒' : '→'}
-      </div>
+      {locked
+        ? <span className="shrink-0 text-xs text-slate-500">閲覧不可</span>
+        : <span className="shrink-0 text-xl text-slate-600 group-hover:text-brand-sky-400 transition-colors">→</span>}
     </div>
   )
 

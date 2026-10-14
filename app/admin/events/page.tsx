@@ -159,15 +159,6 @@ export default function AdminEventsPage() {
                 placeholder="東京都渋谷区..."
               />
             </div>
-            <div>
-              <label className="text-slate-400 text-sm block mb-1">概要</label>
-              <input
-                value={form.description}
-                onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-                className="w-full bg-brand-navy-700 border border-brand-navy-700 rounded-xl px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
-                placeholder="交流会の内容..."
-              />
-            </div>
           </div>
 
           {/* Invitees */}
@@ -220,10 +211,9 @@ export default function AdminEventsPage() {
             <div className="min-w-0">
               <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <span className="text-blue-400 text-sm font-medium">{new Date(ev.heldAt).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                {ev.location && <span className="text-slate-500 text-sm">📍 {ev.location}</span>}
+                {ev.location && <span className="text-slate-500 text-sm">{ev.location}</span>}
               </div>
               <h3 className="text-white font-semibold text-lg">{ev.title}</h3>
-              {ev.description && <p className="text-slate-400 text-sm mt-1 line-clamp-2">{ev.description}</p>}
               <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
                 <span>作成者: {ev.creator.fullName ?? ev.creator.name}</span>
                 <span>招待: {ev.invitees?.length ?? 0}名</span>
