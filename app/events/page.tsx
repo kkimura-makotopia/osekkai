@@ -47,10 +47,10 @@ export default function EventsPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex items-end justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">交流会</h1>
-          <p className="text-slate-400 mt-1">過去・今後の交流会一覧</p>
+          <h1 className="text-3xl font-bold text-white tracking-tight">イベント</h1>
+          <p className="text-slate-400 mt-1 text-sm">過去・今後のイベント一覧</p>
         </div>
         {session?.role === 'admin' && (
           <Link href="/admin/events" className="bg-brand-sky hover:bg-brand-sky-400 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors">
@@ -61,14 +61,16 @@ export default function EventsPage() {
 
       {events.length === 0 && (
         <div className="text-center py-20 text-slate-500">
-          <div className="text-5xl mb-4">🤝</div>
-          <p>まだ交流会がありません</p>
+          <div className="text-5xl mb-4">📅</div>
+          <p>まだイベントがありません</p>
         </div>
       )}
 
       {upcoming.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2"><span className="w-2 h-2 bg-blue-500 rounded-full inline-block" />予定されている交流会</h2>
+        <div className="mb-10">
+          <h2 className="text-sm font-bold text-brand-sky-400 tracking-wider mb-4 flex items-center gap-2 uppercase">
+            <span className="w-8 h-0.5 bg-brand-sky rounded-full inline-block" />開催予定
+          </h2>
           <div className="space-y-4">
             {upcoming.map(ev => <EventCard key={ev.id} event={ev} upcoming locked={isGuest} />)}
           </div>
@@ -77,7 +79,9 @@ export default function EventsPage() {
 
       {past.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2"><span className="w-2 h-2 bg-slate-500 rounded-full inline-block" />過去の交流会</h2>
+          <h2 className="text-sm font-bold text-slate-500 tracking-wider mb-4 flex items-center gap-2 uppercase">
+            <span className="w-8 h-0.5 bg-slate-600 rounded-full inline-block" />過去のイベント
+          </h2>
           <div className="space-y-4">
             {past.map(ev => <EventCard key={ev.id} event={ev} upcoming={false} locked={isGuest} />)}
           </div>
@@ -90,39 +94,56 @@ export default function EventsPage() {
 function EventCard({ event, upcoming, locked }: { event: Event; upcoming: boolean; locked: boolean }) {
   const date = new Date(event.heldAt)
   const inner = (
-      <div className="flex items-start gap-4">
-        <div className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center shrink-0 ${upcoming ? 'bg-brand-sky' : 'bg-brand-navy-700'}`}>
-          <span className="text-white text-xs font-medium">{date.toLocaleDateString('ja-JP', { month: 'short' })}</span>
-          <span className="text-white text-2xl font-bold leading-tight">{date.getDate()}</span>
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="text-white font-semibold text-lg group-hover:text-blue-400 transition-colors">{event.title}</h3>
-          <div className="flex items-center gap-3 mt-1 text-sm text-slate-400 flex-wrap">
-            <span>{date.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}</span>
-            {event.location && <span>📍 {event.location}</span>}
-          </div>
-          {event.description && <p className="text-slate-400 text-sm mt-2 line-clamp-2">{event.description}</p>}
-          <div className="flex items-center gap-3 mt-3 text-xs text-slate-500">
-            <span>主催: {event.creator.fullName ?? event.creator.name}</span>
-            <span>参加者 {event.invitees?.length ?? 0}名</span>
-            <span>おせっかい {event._count.feedbacks}件</span>
-          </div>
-        </div>
-        <div className="shrink-0 text-slate-500 group-hover:text-slate-300 transition-colors">{locked ? '🔒' : '→'}</div>
+    <div className="flex items-center gap-4">
+      {/* 日付バッジ */}
+      <div className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center shrink-0 shadow-lg ${
+        upcoming ? 'bg-gradient-to-br from-brand-sky to-brand-navy shadow-brand-sky/20' : 'bg-brand-navy-700 shadow-black/20'
+      }`}>
+        <span className="text-white/80 text-[10px] font-medium leading-none">{date.toLocaleDateString('ja-JP', { month: 'short' })}</span>
+        <span className="text-white text-2xl font-bold leading-tight">{date.getDate()}</span>
       </div>
+
+      {/* 本文 */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          {upcoming && (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-sky/20 text-brand-sky-400 border border-brand-sky/30">開催予定</span>
+          )}
+          <h3 className="text-white font-bold text-lg group-hover:text-brand-sky-400 transition-colors truncate">{event.title}</h3>
+        </div>
+        <div className="flex items-center gap-3 mt-1.5 text-sm text-slate-400 flex-wrap">
+          <span>{date.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}</span>
+          {event.location && <span className="truncate">📍 {event.location}</span>}
+        </div>
+        <div className="flex items-center gap-2 mt-3 flex-wrap">
+          <span className="text-[11px] text-slate-400 bg-brand-navy-900/60 border border-brand-navy-700 px-2.5 py-1 rounded-full">👥 参加者 {event.invitees?.length ?? 0}名</span>
+          <span className="text-[11px] text-slate-400 bg-brand-navy-900/60 border border-brand-navy-700 px-2.5 py-1 rounded-full">💬 おせっかい {event._count.feedbacks}件</span>
+        </div>
+      </div>
+
+      {/* 右端 */}
+      <div className={`shrink-0 text-xl transition-colors ${locked ? 'text-slate-600' : 'text-slate-600 group-hover:text-brand-sky-400'}`}>
+        {locked ? '🔒' : '→'}
+      </div>
+    </div>
   )
+
+  const base = 'block rounded-2xl p-5 transition-all'
   if (locked) {
     return (
-      <div
-        title="ゲストは詳細を閲覧できません"
-        className="block bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-5 opacity-70 cursor-not-allowed select-none"
-      >
+      <div title="ゲストは詳細を閲覧できません"
+        className={`${base} bg-brand-navy-800 border border-brand-navy-700 opacity-70 cursor-not-allowed select-none`}>
         {inner}
       </div>
     )
   }
   return (
-    <Link href={`/events/${event.id}`} className="block bg-brand-navy-800 border border-brand-navy-700 hover:border-brand-navy-700 rounded-2xl p-5 transition-colors group">
+    <Link href={`/events/${event.id}`}
+      className={`${base} group ${
+        upcoming
+          ? 'bg-gradient-to-br from-brand-navy-800 to-brand-navy-900 border border-brand-sky/30 hover:border-brand-sky hover:shadow-lg hover:shadow-brand-sky/10 hover:-translate-y-0.5'
+          : 'bg-brand-navy-800 border border-brand-navy-700 hover:border-brand-navy-600 hover:-translate-y-0.5'
+      }`}>
       {inner}
     </Link>
   )

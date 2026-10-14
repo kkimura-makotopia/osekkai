@@ -395,12 +395,6 @@ export default function EventDetailPage() {
           </div>
         </div>
 
-        {event.description && (
-          <div className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-5 mb-5">
-            <p className="text-slate-200 text-sm whitespace-pre-wrap leading-relaxed">{event.description}</p>
-          </div>
-        )}
-
         <div className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-5 mb-5">
           <h2 className="text-white font-semibold mb-1 flex items-center gap-2"><span>🗓️</span> 当日のプログラム</h2>
           <p className="text-slate-500 text-xs mb-4">全体 140分 ＋ バッファ10分</p>
@@ -458,9 +452,6 @@ export default function EventDetailPage() {
         <Link href="/events" className="text-slate-400 hover:text-white flex items-center gap-1 transition-colors">
           ← イベント一覧
         </Link>
-        <button onClick={() => setShowWelcome(true)} className="text-brand-sky-400 hover:text-brand-sky transition-colors">
-          ウェルカム画面を見る
-        </button>
       </div>
 
       {/* Header */}
@@ -522,7 +513,10 @@ export default function EventDetailPage() {
               {event.description && <p className="text-slate-400 mt-2 text-sm">{event.description}</p>}
             </div>
             <div className="flex items-center gap-3">
-              <div className="text-xs text-slate-500">主催: {event.creator.fullName ?? event.creator.name}</div>
+              <button onClick={() => setShowWelcome(true)}
+                className="inline-flex items-center gap-1.5 bg-brand-sky/15 hover:bg-brand-sky/25 border border-brand-sky/30 text-brand-sky-400 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors">
+                📋 プログラム
+              </button>
               {isAdmin && (
                 <button onClick={startEdit} className="bg-brand-navy-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-sm">編集</button>
               )}
