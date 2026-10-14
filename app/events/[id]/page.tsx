@@ -84,6 +84,43 @@ const FB_TYPE_OPTIONS = ['intro', 'feedback', 'advice', 'other'] as const
 interface FbField { key: string; label: string; textarea?: boolean; required?: boolean; placeholder?: string }
 // 下書き（この端末にのみ localStorage 保存）
 interface Draft { id: string; toUserId: string; toName: string; toCompany: string; type: string; fields: Record<string, string> }
+
+// ウェルカム画面の固定文（全イベント共通）
+const PROGRAM: { time: string; title: string; desc: string }[] = [
+  { time: '19:00–19:08', title: '冒頭の挨拶', desc: 'おせっ会の目的や価値を共有し、本日の流れを理解していただきます。' },
+  { time: '19:08–19:16', title: 'テーブルごとで自己紹介', desc: 'テーブル内で自己紹介を行い、おせっかいがしやすい関係をつくります。' },
+  { time: '19:16–20:56', title: '【メイン】経営課題の発表とおせっかい', desc: '1テーブル4名で、濃く課題発表とおせっかいタイムを進行します（100分）。' },
+  { time: '20:56–21:06', title: 'アプリにおせっかい登録', desc: '下書きにしたおせっかいを清書して送信し、お相手にお渡しください。素敵なおせっかいが今後のご縁に繋がります。' },
+  { time: '21:06–21:13', title: 'おせっかいネクストアクション', desc: 'いただいた内容の深掘りと紹介方法を議論します（＋LINEグループ作成）。' },
+  { time: '21:13–21:20', title: '閉会・アンケート', desc: 'アンケート回答と次回のご案内を行います。' },
+  { time: '21:20–21:30', title: 'バッファ', desc: '延長が必要なコンテンツに、適宜時間を割り振ります。' },
+]
+// メインコンテンツ（25分で1セット × 4ターム）の流れ
+const MAIN_FLOW = [
+  '① 経営課題の説明（10分）… 事前に準備した課題を発表する時間',
+  '② おせっかいタイム（10分）… 質問・ノウハウ提供・知人紹介・協業提案',
+  '③ おせっかい下書き作成（5分）… おせっかいを備忘のため下書きにする',
+]
+const NOTES_INTRO = '本日はご参加いただき、誠にありがとうございます。皆様にとって有意義な時間となりますよう、運営一同尽力いたします。ご要望等ございましたら、スタッフまでお気軽にお申し付けください。'
+const NOTES: { heading: string; body: string[] }[] = [
+  { heading: '休憩時間について', body: ['途中、休憩時間は設けておりません。お手洗いは事前にお済ませください。'] },
+  {
+    heading: '配布された経営課題シートについて',
+    body: [
+      '企業情報が含まれますので、情報保護の観点から、持ち帰ることのないようにお願いいたします。',
+      'メモ等の書き込みは、テーブル上にあるメモ用紙をお使いください。',
+      '※経営課題シートについては、終了時に運営スタッフが回収いたします。',
+    ],
+  },
+  {
+    heading: 'タイムマネジメントについて',
+    body: [
+      '限られた時間をより濃密で有意義なものにするため、本会では複数のコンテンツをタイトな時間構成で進行いたします。',
+      '前方のスクリーンに各コンテンツの残り時間を表示しておりますので、時間配分は各自でご確認・ご調整をお願いいたします。',
+      '円滑な進行のため、終了時間になりましたら、進行状況にかかわらず次のコンテンツへ移ります。時間厳守へのご協力をお願いいたします。',
+    ],
+  },
+]
 const FB_FIELDS: Record<string, FbField[]> = {
   intro: [
     { key: 'problem', label: 'お相手の課題', textarea: true, required: true, placeholder: '相手が抱えている課題' },
@@ -121,6 +158,7 @@ export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>()
   const [event, setEvent] = useState<EventDetail | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showWelcome, setShowWelcome] = useState(true)
   const [showFbForm, setShowFbForm] = useState(false)
   const [fb, setFb] = useState({ toUserId: '', type: 'intro' as typeof FB_TYPE_OPTIONS[number], content: '', fields: {} as Record<string, string> })
   const [savingFb, setSavingFb] = useState(false)
@@ -341,11 +379,89 @@ export default function EventDetailPage() {
     return (u.fullName ?? u.name ?? '').toLowerCase().includes(q) || (u.company ?? '').toLowerCase().includes(q)
   })
 
+  if (showWelcome) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-8">
+        <Link href="/events" className="text-slate-400 hover:text-white text-sm mb-6 flex items-center gap-1 transition-colors">
+          ← イベント一覧に戻る
+        </Link>
+
+        <div className="bg-gradient-to-br from-brand-navy to-brand-sky rounded-2xl p-6 mb-5">
+          <p className="text-white/80 text-[11px] font-bold tracking-[2px] mb-1">WELCOME</p>
+          <h1 className="text-2xl font-bold text-white leading-tight">{event.title}</h1>
+          <div className="text-white/90 text-sm mt-3 space-y-0.5">
+            <p>📅 {new Date(event.heldAt).toLocaleString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+            {event.location && <p>📍 {event.location}</p>}
+          </div>
+        </div>
+
+        {event.description && (
+          <div className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-5 mb-5">
+            <p className="text-slate-200 text-sm whitespace-pre-wrap leading-relaxed">{event.description}</p>
+          </div>
+        )}
+
+        <div className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-5 mb-5">
+          <h2 className="text-white font-semibold mb-1 flex items-center gap-2"><span>🗓️</span> 当日のプログラム</h2>
+          <p className="text-slate-500 text-xs mb-4">全体 140分 ＋ バッファ10分</p>
+          <ol className="space-y-3">
+            {PROGRAM.map((p, i) => (
+              <li key={i} className="flex gap-3">
+                <span className="text-brand-sky-400 text-xs font-bold tabular-nums shrink-0 w-[92px] pt-0.5">{p.time}</span>
+                <div className="flex-1 min-w-0 border-l border-brand-navy-700 pl-3">
+                  <p className="text-white text-sm font-medium">{p.title}</p>
+                  <p className="text-slate-400 text-xs leading-relaxed mt-0.5">{p.desc}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+
+          <div className="mt-5 bg-brand-navy-900/50 border border-brand-navy-700 rounded-xl p-4">
+            <p className="text-brand-sky-400 text-xs font-bold mb-2">メインコンテンツの流れ（25分で1セット × 4ターム）</p>
+            <ul className="space-y-1.5">
+              {MAIN_FLOW.map((m, i) => (
+                <li key={i} className="text-slate-300 text-xs leading-relaxed">{m}</li>
+              ))}
+            </ul>
+            <p className="text-slate-500 text-[11px] mt-2">※ 3人席の場合、セット4はそれまでに話し合った内容をさらに深め合う時間としてください。</p>
+          </div>
+        </div>
+
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-5 mb-6">
+          <h2 className="text-amber-300 font-semibold mb-3 flex items-center gap-2"><span>⚠️</span> 注意事項</h2>
+          <p className="text-slate-300 text-sm leading-relaxed mb-4">{NOTES_INTRO}</p>
+          <div className="space-y-4">
+            {NOTES.map((n, i) => (
+              <div key={i}>
+                <p className="text-amber-200 text-sm font-semibold mb-1">▼ {n.heading}</p>
+                <ul className="space-y-1">
+                  {n.body.map((b, j) => (
+                    <li key={j} className="text-slate-300 text-xs leading-relaxed">{b}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <button onClick={() => setShowWelcome(false)}
+          className="w-full bg-brand-sky hover:bg-brand-sky-400 text-white font-medium py-3 rounded-xl transition-colors">
+          はじめる（おせっかいの登録へ）→
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <Link href="/events" className="text-slate-400 hover:text-white text-sm mb-6 flex items-center gap-1 transition-colors">
-        ← 交流会一覧に戻る
-      </Link>
+      <div className="flex items-center gap-4 mb-6 text-sm">
+        <Link href="/events" className="text-slate-400 hover:text-white flex items-center gap-1 transition-colors">
+          ← イベント一覧
+        </Link>
+        <button onClick={() => setShowWelcome(true)} className="text-brand-sky-400 hover:text-brand-sky transition-colors">
+          ウェルカム画面を見る
+        </button>
+      </div>
 
       {/* Header */}
       <div className="bg-brand-navy-800 border border-brand-navy-700 rounded-2xl p-6 mb-6">
