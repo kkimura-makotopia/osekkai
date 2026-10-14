@@ -198,17 +198,9 @@ export default function FeedbacksPage() {
   // フィードバックモーダル内で氏名がクリックされた時はFBモーダルを閉じない（ユーザーモーダルを重ねる）
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold text-white">おせっかい一覧</h1>
-          <p className="text-slate-400 mt-1 text-sm">自分宛のおせっかいと、他のメンバー間で交わされたおせっかいを参照できます</p>
-        </div>
-        {!viewerIsGuest && (
-          <button onClick={() => setShowAdd(true)}
-            className="bg-brand-sky hover:bg-brand-sky-400 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors shrink-0">
-            ＋ おせっかいを追加
-          </button>
-        )}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-white">おせっかい一覧</h1>
+        <p className="text-slate-400 mt-1 text-sm">自分宛のおせっかいと、他のメンバー間で交わされたおせっかいを参照できます</p>
       </div>
 
       {/* タブ */}
@@ -305,7 +297,7 @@ export default function FeedbacksPage() {
               className="bg-brand-navy-800 border border-brand-navy-700 hover:border-brand-navy-700 rounded-2xl p-4 transition-colors">
               <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${FB_COLORS[f.type] ?? FB_COLORS.other}`}>{FB_LABELS[f.type] ?? 'その他'}</span>
-                {f.event && <span className="text-slate-500 text-xs truncate">交流会: {f.event.title}</span>}
+                <span className="text-slate-500 text-xs truncate">{f.event ? `イベント: ${f.event.title}` : 'リアルタイム登録'}</span>
                 <span className="text-slate-500 text-xs ml-auto">{new Date(f.createdAt).toLocaleDateString('ja-JP')}</span>
               </div>
               <div className="mb-3"><FeedbackContent content={f.content} className="text-sm" truncateUrls maxLines={6} /></div>
@@ -384,7 +376,7 @@ export default function FeedbacksPage() {
                     </button>
                   )}
                 </div>
-                {openFb.event && <div>関連交流会: {openFb.event.title}</div>}
+                <div>{openFb.event ? `関連イベント: ${openFb.event.title}` : 'リアルタイム登録'}</div>
                 <div>日時: {new Date(openFb.createdAt).toLocaleString('ja-JP')}</div>
               </div>
               {isAdmin && (
@@ -468,6 +460,14 @@ export default function FeedbacksPage() {
           </div>
         )
       })()}
+
+      {/* 画面追従の追加ボタン */}
+      {!viewerIsGuest && (
+        <button onClick={() => setShowAdd(true)}
+          className="fixed bottom-6 right-6 z-40 bg-brand-sky hover:bg-brand-sky-400 text-white px-6 py-3 rounded-full shadow-xl shadow-brand-sky/20 text-sm font-semibold transition-colors">
+          ＋ おせっかい
+        </button>
+      )}
 
       {showAdd && (
         <AddFeedbackModal onClose={() => setShowAdd(false)} onCreated={() => { loadFeedbacks(); setTab('sent') }} />

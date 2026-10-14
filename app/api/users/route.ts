@@ -14,6 +14,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(me)
   }
 
+  // ?scope=members: おせっかい送り先用の正会員リスト（最小情報）。正会員・運営のみ、ゲスト不可。
+  if (searchParams.get('scope') === 'members') {
+    if (viewer.role === 'guest') return forbidden()
+    const members = await prisma.user.findMany({
+      where: { isActive: true, role: 'member' },
+      select: { id: true, fullName: true, name: true, company: true },
+      orderBy: [{ fullName: 'asc' }, { name: 'asc' }],
+    })
+    return NextResponse.json(members)
+  }
+
   // 会員一覧（全件）の取得は運営管理者のみ
   if (viewer.role !== 'admin') return forbidden()
 

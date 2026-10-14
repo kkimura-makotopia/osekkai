@@ -3,17 +3,14 @@ import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { FB_TYPE_OPTIONS, FB_LABELS, FB_FIELDS, buildFeedbackContent, allFeedbackFieldsFilled, FbType } from '@/lib/feedbackOptions'
 
-interface EventLite { id: string; title: string; heldAt: string }
-interface InviteeUser { id: string; fullName: string | null; name: string | null; company: string | null; role?: string }
+interface MemberUser { id: string; fullName: string | null; name: string | null; company: string | null }
 
 export function AddFeedbackModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const { data: session } = useSession()
   const myId = session?.dbUserId
 
-  const [events, setEvents] = useState<EventLite[]>([])
-  const [eventId, setEventId] = useState('')
-  const [invitees, setInvitees] = useState<InviteeUser[]>([])
-  const [loadingInvitees, setLoadingInvitees] = useState(false)
+  const [members, setMembers] = useState<MemberUser[]>([])
+  const [loadingMembers, setLoadingMembers] = useState(true)
 
   const [toUserId, setToUserId] = useState('')
   const [search, setSearch] = useState('')
@@ -26,52 +23,35 @@ export function AddFeedbackModal({ onClose, onCreated }: { onClose: () => void; 
   const [error, setError] = useState('')
 
   useEffect(() => {
-    fetch('/api/events')
+    fetch('/api/users?scope=members')
       .then(r => (r.ok ? r.json() : []))
       .then((d: unknown) => {
-        if (Array.isArray(d)) {
-          const list = (d as EventLite[])
-            .map(e => ({ id: e.id, title: e.title, heldAt: e.heldAt }))
-            .sort((a, b) => new Date(b.heldAt).getTime() - new Date(a.heldAt).getTime())
-          setEvents(list)
-        }
+        if (Array.isArray(d)) setMembers((d as MemberUser[]).filter(u => u.id !== myId))
       })
       .catch(() => {})
-  }, [])
+      .finally(() => setLoadingMembers(false))
+  }, [myId])
 
-  useEffect(() => {
-    if (!eventId) { setInvitees([]); return }
-    setLoadingInvitees(true); setToUserId(''); setSearch(''); setEditing(false)
-    fetch(`/api/events/${eventId}`)
-      .then(r => (r.ok ? r.json() : null))
-      .then((d: { invitees?: { user: InviteeUser }[] } | null) => {
-        const us = Array.isArray(d?.invitees) ? d!.invitees.map(iv => iv.user).filter(u => u.id !== myId) : []
-        setInvitees(us)
-      })
-      .catch(() => setInvitees([]))
-      .finally(() => setLoadingInvitees(false))
-  }, [eventId, myId])
-
-  const senderLabel = (u: InviteeUser) => `${u.fullName ?? u.name ?? '-'}${u.company ? ` (${u.company})` : ''}`
+  const label = (u: MemberUser) => `${u.fullName ?? u.name ?? '-'}${u.company ? ` (${u.company})` : ''}`
   const q = search.trim().toLowerCase()
   const filtered = (editing && q)
-    ? invitees.filter(u => senderLabel(u).toLowerCase().includes(q))
-    : invitees
+    ? members.filter(u => label(u).toLowerCase().includes(q))
+    : members
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    if (!eventId) { setError('イベントを選択してください'); return }
     if (!toUserId) { setError('送り先を選択してください'); return }
     if (!allFeedbackFieldsFilled(type, fields)) { setError('すべての項目を入力してください（URLは任意）'); return }
     const content = buildFeedbackContent(type, fields)
     if (!content) { setError('内容を入力してください'); return }
     if (!confirm('送信していいですか？\n送信するとお相手に届きます。')) return
     setPosting(true)
+    // イベントに紐づかない「リアルタイム登録」のおせっかい
     const res = await fetch('/api/feedbacks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ toUserId, type, content, eventId }),
+      body: JSON.stringify({ toUserId, type, content, eventId: null }),
     })
     setPosting(false)
     if (res.ok) { onCreated(); onClose() }
@@ -88,39 +68,29 @@ export function AddFeedbackModal({ onClose, onCreated }: { onClose: () => void; 
             <h3 className="text-white font-semibold text-lg">おせっかいを追加</h3>
             <button type="button" onClick={onClose} className="text-slate-400 hover:text-white text-2xl leading-none">×</button>
           </div>
-
-          {/* イベント */}
-          <div>
-            <label className="text-slate-400 text-xs block mb-1">イベント</label>
-            <select value={eventId} onChange={e => setEventId(e.target.value)} className={inputCls}>
-              <option value="">選択...</option>
-              {events.map(ev => (
-                <option key={ev.id} value={ev.id}>{ev.title}（{new Date(ev.heldAt).toLocaleDateString('ja-JP')}）</option>
-              ))}
-            </select>
-          </div>
+          <p className="text-slate-500 text-xs">イベントに関わらず、会員の方へその場で送れる「リアルタイム登録」のおせっかいです。</p>
 
           {/* 送り先 */}
           <div className="relative">
-            <label className="text-slate-400 text-xs block mb-1">送り先（招待者から選択）</label>
-            <input type="text" value={search} disabled={!eventId || loadingInvitees}
+            <label className="text-slate-400 text-xs block mb-1">送り先（正会員から選択）</label>
+            <input type="text" value={search} disabled={loadingMembers}
               onChange={e => { setSearch(e.target.value); setEditing(true); setListOpen(true); setToUserId('') }}
               onFocus={e => { setListOpen(true); setEditing(false); e.target.select() }}
               onClick={e => { setListOpen(true); setEditing(false); (e.target as HTMLInputElement).select() }}
               onBlur={() => setTimeout(() => setListOpen(false), 150)}
               autoComplete="off"
-              placeholder={!eventId ? '先にイベントを選択' : (loadingInvitees ? '読み込み中...' : 'クリックで一覧、入力で検索...')}
+              placeholder={loadingMembers ? '読み込み中...' : 'クリックで一覧、入力で検索...'}
               className={`${inputCls} disabled:opacity-60`} />
-            {listOpen && eventId && !loadingInvitees && (
+            {listOpen && !loadingMembers && (
               <ul className="absolute z-20 mt-1 w-full max-h-52 overflow-auto bg-brand-navy-800 border border-brand-navy-600 rounded-lg shadow-xl">
                 {filtered.length === 0 ? (
-                  <li className="px-3 py-2 text-slate-500 text-sm">該当する招待者が見つかりません</li>
+                  <li className="px-3 py-2 text-slate-500 text-sm">該当する会員が見つかりません</li>
                 ) : filtered.map(u => (
                   <li key={u.id}>
                     <button type="button" onMouseDown={e => e.preventDefault()}
-                      onClick={() => { setToUserId(u.id); setSearch(senderLabel(u)); setEditing(false); setListOpen(false) }}
+                      onClick={() => { setToUserId(u.id); setSearch(label(u)); setEditing(false); setListOpen(false) }}
                       className={`w-full text-left px-3 py-2 text-sm transition-colors hover:bg-brand-navy-700 ${toUserId === u.id ? 'bg-brand-sky/20 text-white' : 'text-slate-200'}`}>
-                      {senderLabel(u)}
+                      {label(u)}
                     </button>
                   </li>
                 ))}
