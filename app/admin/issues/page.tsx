@@ -21,6 +21,9 @@ interface Submission {
 const esc = (v: unknown) =>
   String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
+// CSVセルのエスケープ（ダブルクォートで囲み、内部の " は "" に）
+const csvCell = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`
+
 const PDF_CSS = `
 @page { size: A4; margin: 20mm; }
 * { box-sizing: border-box; }
@@ -169,6 +172,30 @@ function AdminIssuesInner() {
     w.focus()
   }
 
+  // 課題単位のCSV出力（表示中の絞り込み結果を1行=1課題で出力）
+  const exportIssuesCsv = () => {
+    if (flatIssues.length === 0) return
+    const headers = ['会社名', '氏名', 'イベント', '開催日', 'カテゴリ', '種別', 'タイトル', '背景・詳細']
+    const rows = flatIssues.map(({ issue, user, event }) => [
+      user.company ?? '',
+      user.fullName ?? user.name ?? '',
+      event.title,
+      new Date(event.heldAt).toLocaleDateString('ja-JP'),
+      issue.category,
+      issue.requestType ?? '',
+      issue.summary,
+      issue.detail ?? '',
+    ])
+    const csv = [headers, ...rows].map(r => r.map(csvCell).join(',')).join('\r\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `経営課題_課題単位_${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   if (status === 'loading' || loading)
     return <div className="flex items-center justify-center min-h-screen"><div className="animate-spin w-8 h-8 border-2 border-brand-sky border-t-transparent rounded-full" /></div>
 
@@ -220,6 +247,17 @@ function AdminIssuesInner() {
           <button onClick={exportPdf} disabled={selectedCount === 0}
             className="ml-auto bg-brand-sky hover:bg-brand-sky-400 text-white px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-40">
             選択した経営課題をPDF化する
+          </button>
+        </div>
+      )}
+
+      {/* ツールバー（課題単位：CSV出力） */}
+      {viewMode === 'issue' && flatIssues.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 mb-6 bg-brand-navy-800 border border-brand-navy-700 rounded-xl px-4 py-3">
+          <span className="text-slate-500 text-sm">表示中の課題 {flatIssues.length} 件</span>
+          <button onClick={exportIssuesCsv}
+            className="ml-auto bg-brand-sky hover:bg-brand-sky-400 text-white px-4 py-2 rounded-xl text-sm font-medium">
+            課題単位でCSV出力する
           </button>
         </div>
       )}
