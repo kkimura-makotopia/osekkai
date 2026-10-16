@@ -43,11 +43,11 @@ body { font-family: 'Hiragino Kaku Gothic ProN','Hiragino Sans','Yu Gothic','Mei
 h2 { display:flex; align-items:center; gap:8px; font-size:11px; letter-spacing:2px; color:#0A2540; font-weight:700; margin:0 0 18px; }
 h2::before { content:''; width:16px; height:2px; background:#1E9CE6; display:inline-block; }
 h2 .count { color:#6b7885; font-weight:400; letter-spacing:0; }
-.issue { display:flex; gap:18px; padding:22px 0; border-bottom:1px solid #d4dae1; page-break-inside:avoid; }
+.issue { display:flex; gap:18px; padding:22px 0; border-bottom:1px solid #d4dae1; break-inside:avoid; page-break-inside:avoid; -webkit-column-break-inside:avoid; }
 .issue:first-of-type { padding-top:4px; }
 .issue:last-child { border-bottom:none; }
 .num { font-size:21px; font-weight:700; color:#0A2540; min-width:30px; line-height:1.3; }
-.issue-body { flex:1; min-width:0; }
+.issue-body { flex:1; min-width:0; break-inside:avoid; page-break-inside:avoid; }
 .meta { font-size:10.5px; letter-spacing:.5px; margin-bottom:9px; }
 .meta .cat { color:#1E9CE6; font-weight:700; }
 .meta .rt { color:#1E9CE6; font-weight:700; }
